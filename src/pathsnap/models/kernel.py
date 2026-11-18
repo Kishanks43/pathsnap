@@ -1,8 +1,9 @@
 """Model 5 - RBF-kernel Support Vector Machine.
 
-OWNER: Person 3
+OWNER: Person 2
 FAMILY: Kernel-based
-CLASS: 5 of 5 required models (Models 3-5 belong to Person 3)
+CLASS: 5 of 5 required models (the fifth model, assigned to Person 2 because the
+       measurement burden - calibration and runtime - sits with the eval harness)
 
 WHY THIS MODEL IS IN THE LINEUP
 -------------------------------

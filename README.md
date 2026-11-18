@@ -17,12 +17,12 @@ raw GPS + road network  ->  candidate arcs  ->  features  ->  classifier  ->  HM
 Four members, four workstreams. **Read [`docs/TEAM_PLAN.md`](docs/TEAM_PLAN.md) first** — it
 assigns every file in this repository to exactly one person.
 
-| Person | Workstream | Models |
+| Person | Workstream | Model |
 |---|---|---|
-| P1 | Data, candidates, features, EDA | — (foundation for all models) |
-| P2 | Models 1–2, evaluation harness, comparison table | Logistic Regression, KNN |
-| P3 | Models 3–5, Bayesian optimisation | Random Forest, HistGradientBoosting, RBF SVM |
-| P4 | HMM/Viterbi, FastAPI, UI, deployment | — (decoder + serving) |
+| P1 | Data, candidates, features, labels, EDA | **Model 1** — Logistic Regression |
+| P2 | Eval harness, comparison table | **Model 2** — KNN, **Model 5** — RBF SVM |
+| P3 | Bayesian optimisation | **Model 3** — Random Forest |
+| P4 | HMM/Viterbi, FastAPI, UI *(later)* | **Model 4** — HistGradientBoosting |
 
 ## Repository layout
 
@@ -32,9 +32,10 @@ pathsnap/
 │   ├── config.py             paths and constants
 │   ├── io/                   raw file readers + typed schema (DONE - shared contract)
 │   ├── geo/                  geodesy, projection, point-to-segment (DONE - shared contract)
-│   ├── candidates/           candidate generation            [P1]
-│   ├── features/             feature engineering             [P1]
-│   ├── models/               five classifiers + registry     [P2, P3]
+│   ├── candidates/           candidate generation            [P1 - DONE]
+│   ├── features/             features + cached matrices      [P1 - DONE]
+│   ├── labels.py             reference-arc labels + trust    [P1 - DONE]
+│   ├── models/               five classifiers + registry     [P1, P2, P3, P4]
 │   ├── evaluation/           metrics (DONE), CV, comparison  [P2]
 │   ├── tuning/               Bayesian hyperparameter search  [P3]
 │   ├── hmm/                  Viterbi route reconstruction    [P4]

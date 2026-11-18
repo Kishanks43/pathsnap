@@ -15,6 +15,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 # --- Data -------------------------------------------------------------------
 DATA_DIR = Path(os.environ.get("PATHSNAP_DATA", PROJECT_ROOT / "data"))
 RAW_DIR = DATA_DIR / "raw"
+PROCESSED_DIR = DATA_DIR / "processed"
 TRAIN_DIR = Path(os.environ.get("PATHSNAP_TRAIN", RAW_DIR / "train"))
 STUDENT_TEST_DIR = Path(os.environ.get("PATHSNAP_STUDENT_TEST", RAW_DIR / "student_test"))
 

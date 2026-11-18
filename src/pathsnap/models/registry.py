@@ -4,9 +4,12 @@ Keep this list at five or more. The comparison table and the report both iterate
 over `ALL_MODELS`, so adding a sixth model here automatically gets it evaluated
 and tabulated - that is the intended extension point.
 
-Ownership:
-    Models 1-2 -> Person 2   (linear.py, instance_based.py)
-    Models 3-5 -> Person 3   (tree.py, boosting.py, kernel.py)
+Ownership (one model each, fifth to P2):
+    Model 1 -> Person 1   linear.py
+    Model 2 -> Person 2   instance_based.py
+    Model 3 -> Person 3   tree.py
+    Model 4 -> Person 4   boosting.py
+    Model 5 -> Person 2   kernel.py
 """
 
 from __future__ import annotations

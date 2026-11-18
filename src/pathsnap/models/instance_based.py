@@ -2,7 +2,7 @@
 
 OWNER: Person 2
 FAMILY: Instance-based
-CLASS: 2 of 5 required models (Models 1-2 belong to Person 2)
+CLASS: 2 of 5 required models (Person 2 also owns Model 5, the RBF SVM)
 
 WHY THIS MODEL IS IN THE LINEUP
 -------------------------------

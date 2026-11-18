@@ -2,7 +2,7 @@
 
 OWNER: Person 3
 FAMILY: Ensemble (bagging of trees)
-CLASS: 3 of 5 required models (Models 3-5 belong to Person 3)
+CLASS: 3 of 5 required models (Person 3 also owns the Bayesian optimisation stage)
 
 WHY THIS MODEL IS IN THE LINEUP
 -------------------------------

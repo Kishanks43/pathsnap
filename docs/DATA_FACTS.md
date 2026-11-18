@@ -86,3 +86,76 @@ physical ground truth. So:
   with the supplied reference.
 - Note in the report that a predicted arc adjacent to the reference arc may be
   geographically reasonable but still counted wrong by an exact-match metric.
+
+## Fact 6 — some reference routes cover only part of their trip (measured)
+
+Comparing total route length against the distance the GPS actually travelled:
+
+```
+route_len / observed_travel_distance
+  train         p5 = 0.38   p50 = 0.84   p75 = 0.92   max = 0.99
+  student_test  p5 = 0.60   p50 = 0.87   max = 0.95
+```
+
+Ten training trips fall below 0.50, two of them badly:
+
+| Trip | ratio | observed travel | route length | trusted obs |
+|---|---|---|---|---|
+| 00000033 | 0.13 | 47.8 km | 6.4 km | 36.7% |
+| 00000002 | 0.14 | 55.9 km | 8.0 km | 89.1% |
+| 00000054 | 0.19 | 169.3 km | 31.4 km | 32.0% |
+
+These routes are connected chains (99–100% of consecutive arcs share a node), so
+they are not corrupted — they simply describe a fraction of the trajectory. A
+reference route that covers 13% of a drive cannot label the other 87%.
+
+**Consequence:** per-observation labels derived from these routes are wrong for
+large stretches, and any model trained on them learns noise. Measured residual
+(distance from each observation to the reference arc it was assigned):
+
+```
+train        p50 = 5.6 m   p90 = 74.9 m   p95 = 140.2 m
+             72.6% <= 10 m    87.1% <= 25 m    89.2% <= 50 m
+student_test p50 = 5.2 m   p90 = 13.3 m
+             79.9% <= 10 m    98.6% <= 25 m
+```
+
+**Decision taken (before any model was trained):** label trust = residual
+`<= 25 m`. That keeps 93% of training candidate rows and 98.5% of student-test
+rows. The criterion is a label-quality filter, is applied identically to both
+partitions, and observations are still available at inference time.
+
+Report this as a dataset limitation, not a modelling trick. It also explains why
+trip 00000054's residual median is 138 m: the GPS is ~84 m from the nearest arc
+in the whole network, so that trip is displaced from the network as well.
+
+## Fact 7 — candidate radius: 100 m is the measured trade-off
+
+Candidate miss rate (reference arc absent from the candidate set) over the 80
+training trips, using trusted labels, versus the size of the resulting matrix:
+
+| radius | max candidates | miss rate (trusted) | candidate rows |
+|---|---|---|---|
+| 50 m | 10 | 1.86% | 1,083,514 |
+| 75 m | 10 | 1.44% | 1,313,622 |
+| **100 m** | **10** | **1.22%** | **1,453,943** |
+| 150 m | 10 | 0.85% | 1,708,157 |
+| 100 m | 6 | 1.75% | 1,010,267 |
+
+Chosen: **radius 100 m, max 10 candidates**. Going to 150 m buys 0.37 percentage
+points for 17% more rows; dropping to 6 candidates costs 0.53 points to save 31%
+of rows. The 100 m / 10 configuration is the knee.
+
+Final prepared dataset (`experiments/results/candidate_quality.json`):
+
+```
+train        80 trips   208,417 obs   1,453,943 candidate rows   6.98 cand/obs
+             miss mean 3.41% (median 0.73%)   trusted 93.0%
+student_test 10 trips    19,160 obs     148,752 candidate rows   7.76 cand/obs
+             miss mean 1.17%                 trusted 98.5%
+```
+
+The gap between the 3.41% headline miss rate and the 1.22% trusted-label rate is
+entirely the two route-truncated trips. Quote both numbers, and say which is
+which — quoting only the better one is the kind of selective reporting the
+integrity policy is aimed at.

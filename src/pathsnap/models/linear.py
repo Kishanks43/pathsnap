@@ -1,8 +1,8 @@
 """Model 1 - Multinomial Logistic Regression.
 
-OWNER: Person 2
+OWNER: Person 1
 FAMILY: Linear / probabilistic
-CLASS: 1 of 5 required models (Models 1-2 belong to Person 2)
+CLASS: 1 of 5 required models (one model per person; P2 carries the fifth)
 
 WHY THIS MODEL IS IN THE LINEUP
 -------------------------------

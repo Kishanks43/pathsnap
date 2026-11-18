@@ -1,37 +1,62 @@
-# Team plan — 4 members, 4 workstreams
+# Team plan — 4 members, one model each, 5th to P2
 
 Read this before writing any code. Every file in the repository has exactly one
 owner, so nobody overwrites anybody and there are no merge conflicts.
+
+**Revised split:** every member owns exactly one model. The fifth model goes to P2.
 
 ---
 
 ## 1. Who owns what
 
-| | **P1 — Data & Features** | **P2 — Models 1–2 + Eval** | **P3 — Models 3–5 + Tuning** | **P4 — Decoder & Serving** |
+| | **P1 — Data & Features** | **P2 — Models 2 & 5 + Eval** | **P3 — Model 3 + Tuning** | **P4 — Model 4 + Decoder & Serving** |
 |---|---|---|---|---|
-| **Owned paths** | `src/pathsnap/candidates/`<br>`src/pathsnap/features/`<br>`src/pathsnap/viz/folium_maps.py` (EDA maps)<br>`notebooks/01_eda.ipynb`<br>`reports/maps/eda_*.html` | `src/pathsnap/models/linear.py`<br>`src/pathsnap/models/instance_based.py`<br>`src/pathsnap/evaluation/cv.py`<br>`src/pathsnap/evaluation/compare.py` | `src/pathsnap/models/tree.py`<br>`src/pathsnap/models/boosting.py`<br>`src/pathsnap/models/kernel.py`<br>`src/pathsnap/tuning/bayes.py` | `src/pathsnap/hmm/`<br>`src/pathsnap/api/`<br>`src/pathsnap/viz/` (prediction maps)<br>`ui/` |
-| **Models built** | — (owns the features all 5 models use) | **Model 1** Logistic Regression<br>**Model 2** Distance-weighted KNN | **Model 3** Random Forest<br>**Model 4** HistGradientBoosting<br>**Model 5** RBF SVM | — (owns the HMM + the system that gets demoed) |
-| **Reports section** | 2.2 Dataset & EDA | 3.1 comparison table, 3.2 for Models 1–2 | 3.2 for Models 3–5, 4. Bayesian optimisation | 5. HMM/Viterbi, 6. Folium, 7. API/UI |
-| **Blocks others?** | **Yes** — everything depends on it | No (uses P1's output) | No (uses P1's output) | Depends on P1 + a final model |
+| **Model(s)** | **Model 1**<br>Multinomial Logistic Regression | **Model 2** Distance-weighted KNN<br>**Model 5** RBF SVM | **Model 3** Random Forest | **Model 4** HistGradientBoosting |
+| **Model file** | `models/linear.py` | `models/instance_based.py`<br>`models/kernel.py` | `models/tree.py` | `models/boosting.py` |
+| **Other owned paths** | `candidates/`<br>`features/`<br>`labels.py`<br>`viz/` (EDA map)<br>`notebooks/01_eda.ipynb` | `evaluation/cv.py`<br>`evaluation/compare.py` | `tuning/bayes.py` | `hmm/`<br>`api/`<br>`viz/` (prediction map)<br>`ui/` |
+| **Report sections** | 2.2 Dataset & EDA<br>3.2 Model 1 | 3.1 comparison table<br>3.2 Models 2 & 5 | 3.2 Model 3<br>4. Bayesian optimisation | 3.2 Model 4<br>5. HMM/Viterbi<br>6. Folium<br>7. API/UI |
+| **Blocks others?** | **Yes** — everything depends on it | No | No | No |
 
-### Why it is split this way
+### Why the 5th model goes to P2
 
-P1 and P4 own no models because their components are heavier than a single
-classifier: P1's feature set determines whether *any* model can work, and P4 owns
-the decoder plus the two-laptop demo, which is where the evaluation actually
-happens. The five required models land on P2 (2 models, both cheap) and P3
-(3 models, all heavier). That is a fair 4-way split, not a 2/2/1 ranking.
+| Candidate owner | Load if they took it | Verdict |
+|---|---|---|
+| **P2** | Already owns the CV harness and the comparison table. SVM is ~5 lines of sklearn; its cost is *runtime*, not implementation. | **Chosen** |
+| P3 | Owns the Bayesian optimisation stage — a full required deliverable with a search space, objective, trials record and tuned-vs-untuned comparison. Adding a second model there would unbalance. | No |
+| P1 | Preprocessing is the blocking critical path; a second model would stall three people. | No |
+| P4 | Owns the decoder plus the entire API/UI/deployment stack. | No |
+
+The deciding factor is **where the measurement burden already lives**. SVM's whole
+story is "excellent accuracy per parameter, poor probability calibration, worst
+runtime" — which is only a credible claim if someone measures calibration and
+inference cost. P2 already owns that measurement infrastructure for the comparison
+table, so the model lands where the evidence is produced.
+
+### Why each person gets that particular model
+
+- **P1 → Logistic Regression.** Cheapest to train and the only model whose
+  probability calibration matters directly to the HMM's emission term, so P1 and
+  P4 need a shared understanding of it. Keeps P1's critical path clear.
+- **P2 → KNN + SVM.** Both are code-light. Both have the same weakness to
+  characterise honestly: coarse or Platt-scaled probabilities that feed the Viterbi
+  emission term. A coherent sub-theme for one person.
+- **P3 → Random Forest.** P3 owns the Bayesian search, and a tree model is the most
+  likely winner, so the search and the tuned artifact stay in one pair of hands.
+- **P4 → HistGradientBoosting.** Fastest strong learner and therefore the natural
+  deployment model — which is the one P4 has to actually serve on evaluation day.
 
 ```mermaid
 flowchart LR
-  P1[P1: candidates + features] --> P2[P2: Model 1, 2]
-  P1 --> P3[P3: Model 3, 4, 5]
-  P2 --> CMP[P2: comparison table]
+  P1[P1: candidates + features + Model 1] --> P2[P2: Model 2, 5 + harness]
+  P1 --> P3[P3: Model 3]
+  P1 --> P4[P4: Model 4]
+  P2 --> CMP[comparison table]
   P3 --> CMP
-  P3 --> BO[P3: Bayesian tuning]
-  BO --> FINAL[[best tuned model]]
+  P4 --> CMP
+  P3 --> BO[Bayesian tuning of the winner]
+  CMP --> BO
+  BO --> FINAL[[tuned model]]
   FINAL --> P4[P4: Viterbi + API + UI]
-  P1 --> P4
 ```
 
 ---
@@ -40,97 +65,106 @@ flowchart LR
 
 Three things are on the critical path. Everyone else waits on them:
 
-1. **`CandidateSet` layout** (P1) — fixed already in `io/schema.py`. Do not change it.
-2. **Feature column contract** (P1) — freeze by the end of the first work block.
-   Once P1 announces "feature schema v1", P2 and P3 train against it. Feature
-   additions after that are additive-only, never renames or reorders, or every
-   saved model breaks.
-3. **`proba` alignment with `candidates`** (P2/P3 → P4) — `proba` rows must line up
-   row-for-row with `candidates.obs_idx` / `arc_id`. This is written in
-   `docs/CONTRACTS.md`; if it breaks, P4's decoder silently reads the wrong arc.
+1. **`CandidateSet` layout** (P1) — fixed in `io/schema.py`. Do not change it.
+2. **Feature schema v1** (P1) — **already written and frozen**:
+   `artifacts/feature_schema.json`, 19 columns, see `docs/CONTRACTS.md` C3.
+   Additive-only changes after this point.
+3. **Cached feature files** (P1) — `data/processed/<partition>/<trip_id>.npz`,
+   produced by `scripts/prepare_dataset.py`. P2–P4 load these; nobody regenerates
+   candidates per model.
 
-**Unblocking trick:** P2 and P3 should not sit idle waiting for P1. While P1
-builds features, they can write and test their model classes against a synthetic
-random matrix (`np.random.rand(200, 8)`), verifying `fit`/`predict_proba`/the
-contract in `models/base.py:check_classifier`. That is 30 minutes of work that
-removes the block entirely.
+**Unblocking note:** P2–P4 do not need to sit idle. The cached matrices already
+exist for all 90 local trips, so model work can start immediately:
+
+```python
+from pathsnap.features.dataset import load_partition
+d = load_partition("train")            # X: 1,453,943 x 19, y, groups
+X, y, groups = d.X, d.y, d.groups
+```
+
+`groups` is the trip index — pass it straight to `GroupKFold`. That is the
+leakage rule enforced mechanically.
 
 ---
 
-## 3. Suggested sequencing (adapt to your actual time budget)
+## 3. Sequencing
 
 | Block | P1 | P2 | P3 | P4 |
 |---|---|---|---|---|
-| **1. Foundations** | `check_data.py`, EDA notebook, candidate generation, candidate miss rate | CV splitter (group-aware), metric wiring, synthetic-data smoke test of Models 1–2 | Model classes for 3–5, synthetic-data smoke test | EDA map; read the guidelines; sketch decoder math |
-| **2. Freeze & train** | **Freeze feature schema v1**; EDA map committed | Train Models 1–2 on all 80 trips, CV + student-test | Train Models 3–5, CV + student-test | Implement Viterbi against *any* model's proba (use P2's logreg) |
-| **3. Compare & tune** | Feature ablations (which features actually help) | Comparison table + `assert_five_models` | Bayesian optimisation on the winning model; tuned vs untuned | Classifier-only vs +HMM comparison, negative cases |
-| **4. Ship** | Prediction maps with P4 | Numbers locked, report section 3 written | Trials CSV exported, section 4 written | API, UI, two-laptop test, screenshots |
+| **1. Foundation** *(done)* | candidates, features, labels, cached matrices, quality report | CV splitter, `ModelRecord` persistence | RF class + config | HistGB class + config |
+| **2. First numbers** | EDA notebook + map; **Model 1 baseline** | Model 2 + Model 5, CV + student-test | Model 3, CV + student-test | Classifier-vs-HMM scaffold on any model's proba |
+| **3. Compare & tune** | feature ablation (with/without sequential block) | comparison table, `assert_five_models` | Bayesian search on the winner | Viterbi against the final model |
+| **4. Ship** | prediction maps with P4 | numbers locked, §3.1 written | trials CSV, §4 written | API, UI, two-laptop test, screenshots |
 
-**Hard gate before Block 4:** `python -m pathsnap.evaluation.compare` must report
-five models with real numbers. If it does not, the demo has nothing to serve.
+**Hard gate before Block 4:** `comparison.csv` reports five models with real
+numbers. If it does not, the demo has nothing to serve.
 
 ---
 
 ## 4. Definition of done — per person
 
-Each person is done when **all** of these are true:
+### P1 — Data, features, Model 1
+- [x] Candidate generation with a spatial index; miss rate measured across 80 trips
+- [x] Feature schema v1 frozen; `artifacts/feature_schema.json` committed
+- [x] Cached matrices for both partitions (`scripts/prepare_dataset.py`)
+- [x] `experiments/results/candidate_quality.json` — miss rate 3.4% overall, 1.2% on trusted labels
+- [ ] EDA notebook executed end-to-end, committed with real outputs
+- [ ] One Folium map (network + GPS + legend) committed as HTML
+- [ ] Feature ablation table: geometry block vs geometry+sequential
+- [ ] **Model 1** trained, CV + student-test numbers recorded, `describe()` filled
+- [ ] Can explain the per-trip projection and why degrees-distance is invalid
 
-### P1 — Data & Features
-- [ ] `python scripts/check_data.py` runs clean on all 90 local trips
-- [ ] Candidate generation works on all 80 train trips; candidate miss rate reported
-- [ ] `feature_schema.json` written and committed; column order frozen
-- [ ] Feature ablations: at least one table showing "with/without" a feature group
-- [ ] EDA notebook executed end-to-end (no stale outputs) and committed
-- [ ] At least one Folium map with network + GPS + legend, committed as HTML
-- [ ] Can explain the projection choice and why degrees-distance is wrong
-
-### P2 — Models 1–2 + evaluation
-- [ ] Both models satisfy `check_classifier`; unit tests pass
-- [ ] Group-aware CV implemented; fold-to-fold std reported, not just the mean
-- [ ] `experiments/results/model_logreg.json` and `model_knn.json` committed
-- [ ] `comparison.csv` generated from records, all five rows filled
+### P2 — Models 2 & 5, evaluation harness
+- [ ] `group_kfold` + `cross_validate_model` implemented; fold std reported
+- [ ] KNN and SVM satisfy `check_classifier`; unit tests green
+- [ ] SVM subsample size stated and justified; Platt-scaling cost measured
+- [ ] `comparison.csv` + `comparison.md` generated from records, five rows
 - [ ] `assert_five_models` passes
-- [ ] Can explain why KNN's probability estimates are coarse and what that costs the HMM
+- [ ] Can explain why KNN probabilities are coarse and what that costs the HMM
 
-### P3 — Models 3–5 + tuning
-- [ ] Three models satisfy `check_classifier`; unit tests pass
-- [ ] RF feature importances exported; `hist_gb` iteration count recorded
-- [ ] SVM training/inference time measured and compared honestly against RF
-- [ ] Optuna study runs; `trials.csv` exported and committed
-- [ ] Tuned vs untuned comparison on the same data partitions and metrics
-- [ ] Can explain TPE sampling, the search space, and why the objective is CV macro F1
+### P3 — Model 3, Bayesian optimisation
+- [ ] Random Forest satisfies `check_classifier`; importances exported
+- [ ] Feature importances read and interpreted (not just exported)
+- [ ] Optuna study with TPE sampler; objective = group-aware CV macro F1
+- [ ] `trials.csv` exported and committed (the required search record)
+- [ ] Tuned vs untuned comparison on identical partitions and metrics
+- [ ] Can explain TPE, the search space, and why the objective is CV macro F1
 
-### P4 — Decoder & serving
-- [ ] Viterbi implemented in log space; handles zero-candidate and disconnected steps
-- [ ] Classifier-only vs +HMM comparison table, including a case where it got worse
+### P4 — Model 4, decoder, serving
+- [ ] HistGradientBoosting satisfies `check_classifier`; early-stopping iterations recorded
+- [ ] Viterbi in log space; zero-candidate and disconnected steps handled
+- [ ] Classifier-only vs +HMM comparison including a case where it got worse
 - [ ] `POST /predict/{trip_id}` works for all ten reserved trips
-- [ ] UI on a second laptop fetches the trip list, calls the API, draws the route
-- [ ] API logs visible and screenshot-worthy on the receiving laptop
-- [ ] Prediction Folium map with all layers committed
+- [ ] UI on a second laptop draws the returned route *(later stage — "see how it goes")*
+- [ ] API request logs screenshot-ready on the receiving laptop
+
+**Note on the UI:** the decoder and API are on the critical path for evaluation;
+the UI is the last thing to build. Do not start it before the five models report
+real numbers.
 
 ---
 
 ## 5. Viva preparation
 
-The brief is explicit: organisers may ask **any** member about **any** component,
-and "every team member must be able to explain the code, experiments, results and
-conclusions". Contribution is judged there, not by commit counts.
-
-Before the demo, each person should be able to answer their own questions cold,
-**and** have a one-line answer for the others' so nobody freezes:
+Organisers may ask **any** member about **any** component, and "every team member
+must be able to explain the code, experiments, results and conclusions". That is
+where individual contribution is assessed — not commit counts.
 
 | Question (from the brief) | Primary | Backup |
 |---|---|---|
 | How is the raw dataset organised? What does each file represent? | P1 | P2 |
 | How did you preprocess? What features and why? | P1 | P3 |
 | What were the data-quality issues and your assumptions? | P1 | P4 |
+| Why did you drop some observations from training? | P1 | P2 |
 | Why these five algorithms? What families do they cover? | P2 | P3 |
-| Why is KNN's log loss worse than its accuracy suggests? | P2 | P3 |
+| Why is KNN's log loss worse than its accuracy suggests? | P2 | P1 |
+| Why is the SVM not the deployed model? | P2 | P4 |
 | Which model won, and what evidence justifies it? | P2 | P3 |
 | What was the Bayesian search space and objective? | P3 | P2 |
 | Did tuning actually help? By how much? | P3 | P2 |
+| Why is tree-based boosting the deployment choice? | P4 | P3 |
 | What are the hidden states and emission probabilities? | P4 | P3 |
-| How are transition probabilities computed? | P4 | P1 |
+| How are transition probabilities computed? | P4 | P2 |
 | How do you handle GPS gaps and disconnected segments? | P4 | P1 |
 | Did HMM improve the route? Where did it fail? | P4 | P2 |
 | How does ground truth stay server-side? | P4 | P1 |
@@ -140,12 +174,14 @@ Before the demo, each person should be able to answer their own questions cold,
 
 ## 6. Rules of engagement
 
-- **Branches:** one branch per person, merge into `main` when tests pass. No PRs,
-  no approvals — the brief does not ask for them.
+- **Branches:** one branch per person, merge into `main` when tests pass. No PRs.
 - **Never edit another person's owned files.** Need a change there? Ask them.
-- **`io/schema.py`, `io/loaders.py`, `geo/distance.py`, `evaluation/metrics.py`
-  are frozen.** They are the shared contract; changes break everyone.
-- **Commit your own work under your own git identity** (`docs/SETUP.md`).
-- **Commit results, not just code.** `experiments/results/*.json` and `*.csv` are
-  tracked on purpose — the report must be verifiable from the repo.
-- **No secrets in git.** No API keys, no passwords, no tokens, no `.env`.
+- **Frozen:** `io/schema.py`, `io/loaders.py`, `geo/distance.py`,
+  `evaluation/metrics.py`, `models/base.py`, `features/build.py` (schema v1),
+  `labels.py`, `features/dataset.py`.
+- **Commit results, not just code.** `experiments/results/*.json|csv` are tracked
+  on purpose — the report must be verifiable from the repository.
+- **One authoritative CV implementation** (P2's `evaluation/cv.py`). Do not write a
+  second splitter for your own model; divergent CV code is how a comparison table
+  becomes fiction.
+- **No secrets in git.**

@@ -1,0 +1,150 @@
+{
+  "train": {
+    "n_trips": 80,
+    "n_observations": 208417,
+    "n_candidate_rows": 1453943,
+    "candidates_per_observation": 6.976,
+    "candidate_miss_rate_mean": 0.0341,
+    "candidate_miss_rate_median": 0.0073,
+    "candidate_miss_rate_p90": 0.042,
+    "candidate_miss_rate_worst": 0.862,
+    "trusted_fraction": 0.93,
+    "trust_residual_m": 25.0,
+    "trips_worst_10": [
+      {
+        "trip_id": "00000054",
+        "miss_rate": 0.862,
+        "trusted_fraction": 0.3196,
+        "n_obs": 19313
+      },
+      {
+        "trip_id": "00000033",
+        "miss_rate": 0.6685,
+        "trusted_fraction": 0.3666,
+        "n_obs": 5844
+      },
+      {
+        "trip_id": "00000072",
+        "miss_rate": 0.1342,
+        "trusted_fraction": 0.9983,
+        "n_obs": 969
+      },
+      {
+        "trip_id": "00000002",
+        "miss_rate": 0.1323,
+        "trusted_fraction": 0.8912,
+        "n_obs": 7243
+      },
+      {
+        "trip_id": "00000061",
+        "miss_rate": 0.0615,
+        "trusted_fraction": 0.9441,
+        "n_obs": 1430
+      },
+      {
+        "trip_id": "00000043",
+        "miss_rate": 0.0495,
+        "trusted_fraction": 0.8473,
+        "n_obs": 2322
+      },
+      {
+        "trip_id": "00000093",
+        "miss_rate": 0.0471,
+        "trusted_fraction": 0.952,
+        "n_obs": 1211
+      },
+      {
+        "trip_id": "00000090",
+        "miss_rate": 0.0448,
+        "trusted_fraction": 1.0,
+        "n_obs": 536
+      },
+      {
+        "trip_id": "00000058",
+        "miss_rate": 0.0417,
+        "trusted_fraction": 1.0,
+        "n_obs": 599
+      },
+      {
+        "trip_id": "00000008",
+        "miss_rate": 0.0372,
+        "trusted_fraction": 0.9405,
+        "n_obs": 3093
+      }
+    ]
+  },
+  "student_test": {
+    "n_trips": 10,
+    "n_observations": 19160,
+    "n_candidate_rows": 148752,
+    "candidates_per_observation": 7.764,
+    "candidate_miss_rate_mean": 0.0117,
+    "candidate_miss_rate_median": 0.0071,
+    "candidate_miss_rate_p90": 0.0264,
+    "candidate_miss_rate_worst": 0.0322,
+    "trusted_fraction": 0.9849,
+    "trust_residual_m": 25.0,
+    "trips_worst_10": [
+      {
+        "trip_id": "00000077",
+        "miss_rate": 0.0322,
+        "trusted_fraction": 0.9873,
+        "n_obs": 3911
+      },
+      {
+        "trip_id": "00000056",
+        "miss_rate": 0.0258,
+        "trusted_fraction": 0.9897,
+        "n_obs": 3958
+      },
+      {
+        "trip_id": "00000076",
+        "miss_rate": 0.0209,
+        "trusted_fraction": 0.9926,
+        "n_obs": 1486
+      },
+      {
+        "trip_id": "00000065",
+        "miss_rate": 0.013,
+        "trusted_fraction": 1.0,
+        "n_obs": 768
+      },
+      {
+        "trip_id": "00000009",
+        "miss_rate": 0.0095,
+        "trusted_fraction": 0.9807,
+        "n_obs": 1049
+      },
+      {
+        "trip_id": "00000091",
+        "miss_rate": 0.0046,
+        "trusted_fraction": 1.0,
+        "n_obs": 874
+      },
+      {
+        "trip_id": "00000007",
+        "miss_rate": 0.0044,
+        "trusted_fraction": 0.8896,
+        "n_obs": 1354
+      },
+      {
+        "trip_id": "00000052",
+        "miss_rate": 0.0038,
+        "trusted_fraction": 1.0,
+        "n_obs": 262
+      },
+      {
+        "trip_id": "00000000",
+        "miss_rate": 0.002,
+        "trusted_fraction": 0.9931,
+        "n_obs": 2503
+      },
+      {
+        "trip_id": "00000040",
+        "miss_rate": 0.0003,
+        "trusted_fraction": 0.9832,
+        "n_obs": 2995
+      }
+    ]
+  }
+}

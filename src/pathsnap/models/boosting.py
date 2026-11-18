@@ -1,8 +1,8 @@
 """Model 4 - HistGradientBoosting.
 
-OWNER: Person 3
+OWNER: Person 4
 FAMILY: Boosting
-CLASS: 4 of 5 required models (Models 3-5 belong to Person 3)
+CLASS: 4 of 5 required models (Person 4 also owns the decoder and the API)
 
 WHY THIS MODEL IS IN THE LINEUP
 -------------------------------
