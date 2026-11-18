@@ -1,0 +1,96 @@
+{
+  "mode": "leave-one-trip-out over student_test (stand-in, not the official Model 4)",
+  "seed": 42,
+  "metrics": {
+    "n_obs": 18884,
+    "n_obs_covered": 18595,
+    "top1_accuracy": 0.7732471933912307,
+    "top1_accuracy_covered": 0.7852648561441248,
+    "macro_f1": 0.5936062642296588,
+    "log_loss": 0.6027922481036667,
+    "candidate_miss_rate": 0.01530396102520648
+  },
+  "nearest_candidate": {
+    "n_obs": 18884,
+    "n_obs_covered": 18595,
+    "top1_accuracy": 0.5581444609192968,
+    "top1_accuracy_covered": 0.5668190373756387,
+    "macro_f1": 0.41555702192796373,
+    "log_loss": null,
+    "candidate_miss_rate": 0.01530396102520648
+  },
+  "per_trip": [
+    {
+      "trip_id": "00000000",
+      "n_obs": 2489,
+      "top1_accuracy": 0.9116,
+      "candidate_miss_rate": 0.0016
+    },
+    {
+      "trip_id": "00000007",
+      "n_obs": 1273,
+      "top1_accuracy": 0.7745,
+      "candidate_miss_rate": 0.0047
+    },
+    {
+      "trip_id": "00000009",
+      "n_obs": 1029,
+      "top1_accuracy": 0.654,
+      "candidate_miss_rate": 0.0097
+    },
+    {
+      "trip_id": "00000040",
+      "n_obs": 2936,
+      "top1_accuracy": 0.8944,
+      "candidate_miss_rate": 0.0003
+    },
+    {
+      "trip_id": "00000052",
+      "n_obs": 262,
+      "top1_accuracy": 0.9122,
+      "candidate_miss_rate": 0.0038
+    },
+    {
+      "trip_id": "00000056",
+      "n_obs": 3914,
+      "top1_accuracy": 0.7652,
+      "candidate_miss_rate": 0.025
+    },
+    {
+      "trip_id": "00000065",
+      "n_obs": 768,
+      "top1_accuracy": 0.7487,
+      "candidate_miss_rate": 0.013
+    },
+    {
+      "trip_id": "00000076",
+      "n_obs": 1475,
+      "top1_accuracy": 0.7776,
+      "candidate_miss_rate": 0.0203
+    },
+    {
+      "trip_id": "00000077",
+      "n_obs": 3864,
+      "top1_accuracy": 0.6237,
+      "candidate_miss_rate": 0.0323
+    },
+    {
+      "trip_id": "00000091",
+      "n_obs": 874,
+      "top1_accuracy": 0.7803,
+      "candidate_miss_rate": 0.0046
+    }
+  ],
+  "iterations_used_per_fold": [
+    300,
+    300,
+    300,
+    300,
+    300,
+    300,
+    300,
+    300,
+    300,
+    77
+  ]
+}
