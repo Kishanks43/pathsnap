@@ -34,10 +34,14 @@ C. student-test performance + over/underfitting evidence
 
 from __future__ import annotations
 
+import csv
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+
+from pathsnap.features.build import FEATURE_COLUMNS
 
 
 class RandomForestModel:
@@ -47,24 +51,51 @@ class RandomForestModel:
     def __init__(
         self,
         n_estimators: int = 300,
-        max_depth: int | None = None,
-        min_samples_leaf: int = 1,
+        max_depth: int | None = 20,
+        min_samples_split: int = 2,
+        min_samples_leaf: int = 2,
+        max_features: str | float = "sqrt",
+        class_weight: str | None = "balanced_subsample",
         random_state: int = 42,
         n_jobs: int = -1,
     ):
+        if n_estimators < 1:
+            raise ValueError("n_estimators must be positive")
+        if max_depth is not None and max_depth < 1:
+            raise ValueError("max_depth must be positive or None")
+        if min_samples_split < 2:
+            raise ValueError("min_samples_split must be at least 2")
+        if min_samples_leaf < 1:
+            raise ValueError("min_samples_leaf must be positive")
+        if class_weight not in (None, "balanced", "balanced_subsample"):
+            raise ValueError("class_weight must be None, 'balanced', or 'balanced_subsample'")
+
         self.n_estimators = n_estimators
         self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
+        self.max_features = max_features
+        self.class_weight = class_weight
         self.random_state = random_state
         self.n_jobs = n_jobs
         self._clf: RandomForestClassifier | None = None
         self.classes_: np.ndarray | None = None
 
     def fit(self, X: np.ndarray, y: np.ndarray, groups: np.ndarray | None = None):
+        X = np.asarray(X)
+        y = np.asarray(y)
+        if X.ndim != 2 or X.shape[1] != len(FEATURE_COLUMNS):
+            raise ValueError(f"X must have {len(FEATURE_COLUMNS)} feature columns")
+        if y.ndim != 1 or len(y) != len(X):
+            raise ValueError("y must be a 1-D array with one label per row of X")
+
         self._clf = RandomForestClassifier(
             n_estimators=self.n_estimators,
             max_depth=self.max_depth,
+            min_samples_split=self.min_samples_split,
             min_samples_leaf=self.min_samples_leaf,
+            max_features=self.max_features,
+            class_weight=self.class_weight,
             random_state=self.random_state,
             n_jobs=self.n_jobs,
         )
@@ -73,16 +104,35 @@ class RandomForestModel:
         return self
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        assert self._clf is not None, "call fit() first"
+        if self._clf is None:
+            raise RuntimeError("call fit() before predict_proba()")
         return self._clf.predict_proba(X)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        assert self._clf is not None, "call fit() first"
+        if self._clf is None:
+            raise RuntimeError("call fit() before predict()")
         return self._clf.predict(X)
 
     def feature_importances(self) -> np.ndarray:
-        assert self._clf is not None, "call fit() first"
+        if self._clf is None:
+            raise RuntimeError("call fit() before reading feature importances")
         return self._clf.feature_importances_
+
+    def export_feature_importances(self, path: Path) -> Path:
+        """Write fitted importances alongside the frozen schema's feature names."""
+        importances = self.feature_importances()
+        if len(importances) != len(FEATURE_COLUMNS):
+            raise RuntimeError("feature importance count does not match the feature schema")
+
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        order = sorted(range(len(importances)), key=lambda i: (-importances[i], i))
+        with path.open("w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(("rank", "feature", "importance"))
+            for rank, index in enumerate(order, start=1):
+                writer.writerow((rank, FEATURE_COLUMNS[index], f"{importances[index]:.12g}"))
+        return path
 
     def describe(self) -> dict[str, Any]:
         return {
@@ -90,7 +140,12 @@ class RandomForestModel:
             "family": self.family,
             "n_estimators": self.n_estimators,
             "max_depth": self.max_depth,
+            "min_samples_split": self.min_samples_split,
             "min_samples_leaf": self.min_samples_leaf,
+            "max_features": self.max_features,
+            "class_weight": self.class_weight,
             "random_state": self.random_state,
+            "n_jobs": self.n_jobs,
             "objective": "gini impurity",
+            "depth_limited": self.max_depth is not None,
         }
