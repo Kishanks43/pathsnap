@@ -77,6 +77,9 @@ python scripts/run_p2.py --skip-svm      # KNN only
 python scripts/run_p2.py --skip-knn      # SVM only
 python scripts/run_p2.py --table-only    # rebuild comparison.csv/.md from records
 
+# 5b. Person 4's HistGradientBoosting (the fifth model, ~2 min)
+python scripts/run_model4.py
+
 # 6. reproduce P3 (random forest + Bayesian tuning) - about 1.5 h on a 16-core laptop
 python scripts/run_p3.py untuned         # default forest: group CV, student test, importances
 python scripts/run_p3.py tune --model random_forest --n-trials 25
@@ -115,10 +118,9 @@ These come straight from the brief and are the ones teams actually lose marks on
 2. **Splits are by trip.** No observation from one trip may be in two partitions or
    two CV folds. Use `groups=trip_id`.
 3. **Five models, real numbers.** Every number in the report must be reproducible
-   from this repo. No typed-in metrics, no fabricated curves. This build ships four
-   comparable records (`logreg`, `knn`, `svm_rbf`, `random_forest`); Person 4's
-   HistGradientBoosting is deliberately excluded, so `assert_five_models` reports
-   INCOMPLETE and no stand-in row is inserted into `comparison.csv`.
+   from this repo. No typed-in metrics, no fabricated curves. All five records
+   (`logreg`, `knn`, `random_forest`, `hist_gradient_boosting`, `svm_rbf`) are
+   present and `assert_five_models` passes.
 4. **Keep the experiment record.** Configs, seeds, Optuna trials and result CSVs are
    committed, not just the final model.
 5. **Everyone can defend their own section** in the viva. That is how individual
@@ -128,10 +130,11 @@ These come straight from the brief and are the ones teams actually lose marks on
 
 All four workstreams are implemented for this build: the P1 feature pipeline and
 logistic regression, the P2 group-aware CV harness with KNN and RBF SVM, the P3
-random forest plus the Optuna search, and P4's Viterbi decoder, FastAPI service,
-Streamlit UI, prediction maps and artifact manifest. Person 4's
-HistGradientBoosting model is excluded by request; its runner and stand-in summary
-remain in the repository for the owner to finish.
+random forest plus the Optuna search, and P4's HistGradientBoosting, Viterbi
+decoder, FastAPI service, Streamlit UI, prediction maps and artifact manifest.
+All five model records are present and `assert_five_models` passes. The random
+forest won on accuracy and is deployed; HistGradientBoosting is the speed option
+(5.5 s to train against 235 s).
 
 `pytest -q` passes. The long-running stages write their records to
 `experiments/results/`; the API and UI run from `artifacts/`, which is gitignored

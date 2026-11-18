@@ -25,6 +25,7 @@ as amendment A2 in `docs/CONTRACTS.md`.
 | File | Produced by |
 |---|---|
 | `p2_knn.joblib`, `p2_svm_rbf.joblib` | `scripts/run_p2.py` (experiment artifacts; the API does not load them) |
+| `hist_gradient_boosting.joblib` | `scripts/run_model4.py` (second-best model, fastest to train) |
 | `manifest.json` | `scripts/run_p4.py manifest` (git commit, library versions, checksums) |
 
 ## Sizes and submission

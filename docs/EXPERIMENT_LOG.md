@@ -150,29 +150,38 @@ does a fitted linear model add over the nearest-candidate rule?
 
 **Setup**
 - Partitions: train (80 trips, 1,352,108 trusted rows), student_test (10 trips, 146,499 trusted rows)
-- CV: 5-fold GroupKFold by trip, seed 42. Temporary splitter until P2's `cv.py` lands.
+- CV: 5-fold GroupKFold by trip, seed 42, through P2's shared `evaluation/cv.py`.
+  Re-scored on 2026-11-18 after the temporary splitter was retired; see the note
+  below. Student-test uses `evaluation/holdout.evaluate_on_test`.
 - Model: StandardScaler + LogisticRegression(C=1.0, max_iter=2000), fitted per fold
 - Command: `python scripts/run_model1.py`
-- Full log: `experiments/logs/model1_20261118_122042.log`
+- Full log: `experiments/logs/model1_20261118_185506.log`
 
 **Expected:** the sequential block (previous observation, connectivity, speed) should
 add signal beyond geometry. A geometry-only linear model cannot do better than the
 nearest-candidate rule on its own, since its score is monotone in distance.
 
-**Result** (observation level, trusted labels)
+**Result** (observation level, trusted labels; arc ids namespaced per trip,
+candidate-row log loss via `safe_log_loss`, as in every other model record)
 
 | config | CV macro F1 (mean ± std) | CV top-1 | student-test top-1 | student-test macro F1 | student-test log loss |
 |---|---|---|---|---|---|
 | nearest candidate (no model) | — | — | 0.5581 | 0.4156 | N/A (raw distances, not probabilities) |
-| Logistic, geometry only (10 cols) | 0.3863 ± 0.0420 | 0.5756 | 0.5581 | 0.4156 | 0.8721 |
-| **Logistic, all 19 cols** | **0.6444 ± 0.0290** | **0.7855** | **0.7938** | **0.6316** | **0.6351** |
+| Logistic, geometry only (10 cols) | 0.3784 ± 0.0368 | 0.5756 | 0.5581 | 0.4020 | 0.2033 |
+| **Logistic, all 19 cols** | **0.6269 ± 0.0252** | **0.7855** | **0.7938** | **0.6105** | **0.1488** |
 
-Train time 3.2 s, inference 0.003 ms/obs, 0 convergence warnings.
+Train time 3.7 s, inference 0.0016 ms/obs, 0 convergence warnings.
 
-**What this changes:** the sequential block is worth ~26 points of CV macro F1. Geometry
-alone reproduces nearest-candidate exactly on student_test, which confirms the linear
+**What this changes:** the sequential block is worth ~25 points of CV macro F1. Geometry
+alone reproduces nearest-candidate on student-test top-1, which confirms the linear
 model is not learning anything beyond distance from those columns. Model 1 is the
 baseline every other model must beat.
+
+**2026-11-18 re-score:** the first run used P1's temporary splitter, global arc ids
+and observation-level renormalised log loss (CV 0.6444 ± 0.0290, test macro F1 0.6316,
+log loss 0.6351). It was re-run through the shared harness so that all four records in
+`comparison.csv` use the same metric definitions. Top-1 is unchanged; the macro F1 drop
+is the correction for arc-id collisions between trips. Quote the new numbers only.
 
 **Failure mode / caveat:**
 - Route continuity is N/A here; it needs the HMM-decoded route (P4).
@@ -370,7 +379,8 @@ configuration is re-scored on all 1.35M training rows?
   `python scripts/run_p3.py tune --model random_forest --n-trials 25` then
   `python scripts/run_p3.py final --model random_forest`
 
-**Expected:** the forest should beat logistic regression (0.6444) because candidate
+**Expected:** the forest should beat logistic regression (0.6269 after the shared
+harness re-score) because candidate
 geometry is non-linear, and tuning should add a small amount, mostly through deeper
 trees and a lower learning bias. The subsample objective was expected to overstate
 the full-data score.
@@ -420,6 +430,64 @@ off (for example deeper trees) could have been missed. Log loss is reported on
 student_test only: the full-data CV helper did not record it for these folds
 (`null` in the comparison file). The forest is 665 MB on disk, which is why
 `artifacts/` stays out of git and the manifest carries its checksum instead.
+
+---
+
+### [P4] HistGradientBoosting (Model 4) - early stopping and the speed/accuracy trade-off
+
+**Question:** does sequential boosting beat the random forest, and how much training
+and inference time does it save?
+
+**Setup**
+- Data partitions: train (80 trips, 1,352,108 trusted rows) / student_test
+  (10 trips, 146,499 trusted rows) - evaluator-test never read
+- CV: 5 folds, `GroupKFold` by trip, seed 42, through the shared
+  `evaluation/cv.py` and `evaluation/holdout.py`
+- Model: `HistGradientBoostingModel`, learning_rate=0.1, max_iter=300,
+  max_leaf_nodes=31, l2_regularization=0.0, early_stopping=True, random_state=42
+- Early stopping held out a random 10% of rows; 85 of the 300 iterations were used
+- Features: schema v1, 19 columns
+- Command: `python scripts/run_model4.py`
+
+**Expected:** boosting should match or beat the forest's CV macro F1 while training
+in seconds rather than minutes, because histogram binning and early stopping cut the
+cost of each tree. With only 80 trips, the fold spread should stay large.
+
+**Result**
+
+| metric | value |
+|---|---|
+| CV macro F1 (mean +- std) | 0.6565 +- 0.0297 |
+| student-test top-1 accuracy | 0.8005 |
+| student-test macro F1 | 0.6368 |
+| log loss | N/A (zero probability for the true label on 6.8e-06 of candidate rows) |
+| route continuity | N/A (classifier only; HMM stage is separate) |
+| train time (full 1.35M rows) | 5.5 s |
+| inference ms/obs | 0.0088 |
+| iterations used | 85 of 300 |
+
+Against the random forest: CV 0.6565 vs 0.6627, test top-1 0.8005 vs 0.8148,
+macro F1 0.6368 vs 0.6443. Boosting is about **43x faster to train** (5.5 s vs
+234.8 s) and **3.9x faster at inference** (0.0088 vs 0.0342 ms/obs), but it is
+second on every accuracy metric. Log loss is N/A for HGB because a tiny number of
+rows receive exactly zero probability, while the forest records 0.1307.
+
+**Artifacts:** `experiments/results/model_hist_gradient_boosting.json`,
+`experiments/results/model4_detail.json`,
+`experiments/results/model4_student_test_predictions.csv`,
+`artifacts/hist_gradient_boosting.joblib`
+
+**What this changes:** the fifth model record exists and `assert_five_models` now
+passes. The random forest remains the deployed model: it wins CV, top-1, macro F1,
+continuity and log loss. HistGradientBoosting is the speed option and the model to
+use if evaluation-day latency or retraining time becomes the binding constraint.
+
+**Failure mode / caveat:** scikit-learn's early stopping holds out a random 10% of
+**rows**, not whole trips, so rows from the same trip appear on both sides of its
+internal validation split. The 85-iteration stopping point may therefore be later
+than a trip-aware split would choose. The accuracy gap to the forest (0.0062 CV
+macro F1) is smaller than the fold std (0.026-0.030), so "forest wins" is supported
+by the test numbers and log loss, not by a decisive CV margin.
 
 ---
 
@@ -510,10 +578,13 @@ report's methodology quietly draws from.
 | 2026-11-18 | Candidate-miss observations keep true label `-1` in observation-level metrics | Drop them; treat them as wrong only for accuracy | A miss is a real failure of the pipeline; dropping it would inflate every model's score. Macro F1 includes `-1` as a class that can never be predicted, which is deliberately conservative |
 | 2026-11-18 | Bayesian tuning runs on a 150,201-row observation subsample, but the tuned-vs-untuned decision is made on full-data CV | Tune on all 1.35M rows; tune on a fixed trip subset | 25 trials on the full data would cost roughly 10x the 44 min spent. The decision rule was pre-registered: the subsample only proposes configurations, the full data decides |
 | 2026-11-18 | Keep the untuned forest as `model.joblib` | Ship the tuned configuration because it won the search | The tuned configuration scores 0.6596 vs 0.6627 on full-data CV and 0.8058 vs 0.8148 top-1 on student_test. Shipping the search winner would contradict the pre-registered decision rule and the held-out evidence |
-| 2026-11-18 | The comparison table in this build has four models, not five | Add Person 4's HistGradientBoosting record from a non-comparable stand-in run | The build scope excludes Person 4's model by request. `standin_model4_loto_summary.json` uses a different protocol, so adding it to `comparison.csv` would compare unlike numbers. `assert_five_models` therefore reports INCOMPLETE and the report must say why |
+| 2026-11-18 | Five-model table completed: HistGradientBoosting was run on all 80 training trips and scored with the shared harness | Insert the `standin_model4_loto_summary.json` numbers as the fifth row | The stand-in uses 9-trip training folds, not the official 80-trip protocol. Once the training partition was available, `scripts/run_model4.py` produced a real record (`model_hist_gradient_boosting.json`); `assert_five_models` passes and the stand-in file stays out of `comparison.csv` |
 | 2026-11-18 | Viterbi settings chosen on 10 held-out training trips, not on student_test | Tune on student_test for the best demo numbers | Student_test is the only held-out data this build has; tuning on it would leak the evaluation. The tuning stage fits a separate forest on the other 70 training trips |
 | 2026-11-18 | max_hops=2 wins the tie-break at beta_m=10 by needing 503 fewer forced steps | Keep the simpler hops=1 | Top-1 was identical to four decimal places; fewer forced emission-only steps means more of the route is explained by the model, which is the safer failure mode |
 | 2026-11-18 | Report the 5/10 trips where the HMM makes top-1 worse, with the worst map | Report only the pooled gain | The pooled +1.01 pp hides a -7.09 pp trip. The brief asks for a case where the decoder got worse, and the parallel-road failure is the honest limitation |
+| 2026-11-18 | Re-ran logistic regression through P2's shared CV and held-out harness | Keep P1's original numbers and just note the difference | One authoritative CV implementation is a team rule. The old splitter also used global arc ids and observation-level log loss, so the logreg log-loss cell was not comparable with KNN/SVM/RF. The re-score changed CV macro F1 0.6444 -> 0.6269 and log loss 0.6351 -> 0.1488; only the new numbers are quoted |
+| 2026-11-18 | Build HistGradientBoosting as the fifth model, reversing the earlier exclusion | Leave four records and keep the guard failing | The complete project needs five real models. The owner's runner was pointed at the shared CV harness, its official record was produced on all 80 training trips, and `assert_five_models` now passes |
+| 2026-11-18 | Keep the random forest as the deployed model even though HGB is 43x faster to train | Deploy HGB because the plan called it the natural deployment model | The forest wins on CV (0.6627 vs 0.6565), test top-1 (0.8148 vs 0.8005), macro F1 (0.6443 vs 0.6368) and log loss (0.1307 vs N/A). HGB is documented as the speed option, with a 5.5 s fit and 0.0088 ms/obs |
 | | | | |
 
 ---

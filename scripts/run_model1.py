@@ -12,9 +12,11 @@ Outputs (all committed, all reproducible from this script):
 
 NOTE ON THE SPLITTER
 --------------------
-The CV loop here uses sklearn's GroupKFold directly. P2 owns
-pathsnap/evaluation/cv.py; once that lands, replace `grouped_cv` below with its
-cross_validate_model so every model is scored by one implementation.
+CV and student-test scoring use P2's shared harness
+(`evaluation/cv.cross_validate_model` and `evaluation/holdout.evaluate_on_test`),
+the same code KNN, SVM and Random Forest use. Fold assignment is still
+GroupKFold(5) by trip; arc ids are namespaced per trip and log loss is the
+candidate-row value, as in every other model record.
 
 METRIC DEFINITIONS (observation level, see docs/CONTRACTS.md C9)
 -----------------------------------------------------------------
@@ -25,9 +27,10 @@ METRIC DEFINITIONS (observation level, see docs/CONTRACTS.md C9)
                   candidate set count as wrong.
 - macro_f1      : macro F1 over reference arc ids, computed on observations whose
                   reference arc IS in the candidate set (labels are undefined otherwise).
-- log_loss      : observation-level negative log-likelihood of the reference
-                  candidate, with scores renormalised to sum to 1 within each
-                  observation. Computed on covered observations only.
+- log_loss      : model records use the shared harness's candidate-row value
+                  (`safe_log_loss`), so they are comparable with KNN/SVM/RF. Only
+                  the nearest-candidate baseline uses the observation-level
+                  renormalised value described below; it reports N/A instead.
 - route_continuity : N/A here. It needs the decoded route, which is produced by
                   the HMM stage (P4). Recorded as null, not estimated.
 """
@@ -43,24 +46,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-from sklearn.exceptions import ConvergenceWarning  # noqa: E402
-from sklearn.model_selection import GroupKFold  # noqa: E402
+import numpy as np
+import pandas as pd
+from sklearn.exceptions import ConvergenceWarning
 
-from pathsnap.config import LOGS_DIR, RESULTS_DIR, ensure_dirs  # noqa: E402
-from pathsnap.evaluation.metrics import macro_f1  # noqa: E402
-from pathsnap.features.build import FEATURE_COLUMNS  # noqa: E402
-from pathsnap.features.dataset import StackedFeatures, load_partition  # noqa: E402
-from pathsnap.models.base import ModelRecord  # noqa: E402
-from pathsnap.models.linear import LogisticRegressionModel  # noqa: E402
+from pathsnap.config import LOGS_DIR, RESULTS_DIR, ensure_dirs
+from pathsnap.evaluation.cv import cross_validate_model, group_kfold
+from pathsnap.evaluation.holdout import evaluate_on_test
+from pathsnap.evaluation.metrics import macro_f1
+from pathsnap.features.build import FEATURE_COLUMNS
+from pathsnap.features.dataset import StackedFeatures, load_partition
+from pathsnap.models.base import ModelRecord
+from pathsnap.models.linear import LogisticRegressionModel
 
 SEED = 42
 N_SPLITS = 5
 EPS = 1e-15
 OBS_KEY_STRIDE = 10_000_000
 
-GEOMETRY_COLS = list(range(0, 10))            # first 10 columns: candidate geometry + network context
+GEOMETRY_COLS = list(range(10))            # first 10 columns: candidate geometry + network context
 ALL_COLS = list(range(len(FEATURE_COLUMNS)))  # 19 columns, schema v1
 
 LOG: list[str] = []
@@ -100,8 +104,8 @@ def evaluate(table: pd.DataFrame) -> dict:
     f1 = macro_f1(covered["ref_arc"].astype(np.int64).to_numpy(), covered["pred_arc"].to_numpy())
     p = np.clip(covered["p_ref"].to_numpy(), EPS, 1.0)
     return {
-        "n_obs": int(len(table)),
-        "n_obs_covered": int(len(covered)),
+        "n_obs": len(table),
+        "n_obs_covered": len(covered),
         "top1_accuracy": float(table["top1"].mean()),
         "top1_accuracy_covered": float(covered["top1"].mean()) if len(covered) else float("nan"),
         "macro_f1": float(f1),
@@ -126,28 +130,36 @@ def score_rows(model, X: np.ndarray, cols: list[int]) -> np.ndarray:
 
 
 def grouped_cv(d: StackedFeatures, mask: np.ndarray, cols: list[int]) -> dict:
-    X, y, groups = d.X[mask], d.y[mask], d.group_index[mask]
-    obs, arc = d.obs_idx[mask], d.arc_id[mask]
+    """Score with P2's shared harness so every model uses one implementation."""
+    X, y, groups = d.X[:, cols][mask], d.y[mask], d.group_index[mask]
 
+    cv = cross_validate_model(
+        LogisticRegressionModel(C=1.0, max_iter=2000),
+        X, y, groups, n_splits=N_SPLITS, seed=SEED,
+        obs_idx=d.obs_idx[mask], arc_id=d.arc_id[mask],
+    )
+    valid_trips = [len(np.unique(groups[va])) for _, va in
+                   group_kfold(X, y, groups, n_splits=N_SPLITS, seed=SEED)]
     folds = []
-    splitter = GroupKFold(n_splits=N_SPLITS)
-    for k, (tr, va) in enumerate(splitter.split(X, y, groups), 1):
-        model, t_fit, n_conv = fit_model(X[tr], y[tr], cols)
-        s = score_rows(model, X[va], cols)
-        m = evaluate(observation_table(groups[va], obs[va], arc[va], y[va], s))
-        m.update({"fold": k, "fit_seconds": t_fit, "convergence_warnings": n_conv,
-                  "n_trips_valid": int(len(np.unique(groups[va])))})
+    for k, (f, n_trips) in enumerate(zip(cv.folds, valid_trips), 1):
+        m = {
+            "fold": k,
+            "macro_f1": f.macro_f1,
+            "top1_accuracy": f.top1_accuracy,
+            "log_loss": f.log_loss,
+            "n_trips_valid": n_trips,
+        }
         folds.append(m)
+        ll = "N/A" if f.log_loss is None else f"{f.log_loss:.4f}"
         say(f"    fold {k}: macro_f1={m['macro_f1']:.4f} top1={m['top1_accuracy']:.4f} "
-            f"log_loss={m['log_loss']:.4f} trips_valid={m['n_trips_valid']} fit={t_fit:.1f}s")
+            f"log_loss={ll} trips_valid={n_trips}")
 
-    f1s = np.array([f["macro_f1"] for f in folds])
     return {
         "folds": folds,
-        "cv_macro_f1_mean": float(f1s.mean()),
-        "cv_macro_f1_std": float(f1s.std(ddof=1)),
-        "cv_top1_mean": float(np.mean([f["top1_accuracy"] for f in folds])),
-        "cv_log_loss_mean": float(np.mean([f["log_loss"] for f in folds])),
+        "cv_macro_f1_mean": cv.mean_macro_f1,
+        "cv_macro_f1_std": cv.std_macro_f1,
+        "cv_top1_mean": cv.mean_top1_accuracy,
+        "cv_log_loss_mean": cv.mean_log_loss,
     }
 
 
@@ -164,13 +176,25 @@ def nearest_candidate_baseline(d: StackedFeatures, mask: np.ndarray, dist_col: i
 
 
 def student_test(model, d: StackedFeatures, mask: np.ndarray, cols: list[int]) -> tuple[dict, float]:
-    X = d.X[mask]
-    t0 = time.perf_counter()
-    s = score_rows(model, X, cols)
-    t_inf = time.perf_counter() - t0
-    m = evaluate(observation_table(d.group_index[mask], d.obs_idx[mask], d.arc_id[mask], d.y[mask], s))
-    n_obs = len(np.unique(d.group_index[mask].astype(np.int64) * OBS_KEY_STRIDE + d.obs_idx[mask]))
-    return m, 1000.0 * t_inf / max(n_obs, 1)
+    """Student-test scoring through P2's shared held-out helper."""
+    from types import SimpleNamespace
+
+    view = SimpleNamespace(
+        X=d.X[:, cols], y=d.y, groups=d.group_index,
+        obs_idx=d.obs_idx, arc_id=d.arc_id,
+    )
+    shared, _ = evaluate_on_test(model, view, mask)
+
+    obs_key = d.group_index[mask].astype(np.int64) * OBS_KEY_STRIDE + d.obs_idx[mask]
+    covered = pd.DataFrame({"obs": obs_key, "y": d.y[mask]}).groupby("obs")["y"].max()
+    m = {
+        "top1_accuracy": shared["top1_accuracy"],
+        "macro_f1": shared["macro_f1"],
+        "log_loss": shared["log_loss"],
+        "candidate_miss_rate": float(1.0 - covered.mean()),
+        "n_obs": shared["n_observations"],
+    }
+    return m, shared["inference_ms_per_obs"]
 
 
 def main() -> int:
@@ -252,7 +276,7 @@ def main() -> int:
         name="logreg",
         family="linear/probabilistic",
         config={**model_obj.describe(), "features": "all_19", "label_trust_m": 25.0,
-                "cv": f"GroupKFold({N_SPLITS}) by trip, sklearn (temporary until P2 cv.py lands)"},
+                "cv": f"GroupKFold({N_SPLITS}) by trip, shared evaluation/cv.py"},
         seed=SEED,
         cv_macro_f1=final["cv"]["cv_macro_f1_mean"],
         test_top1_accuracy=final["test"]["top1_accuracy"],

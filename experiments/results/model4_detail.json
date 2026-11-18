@@ -1,0 +1,128 @@
+{
+  "cv": {
+    "folds": [
+      {
+        "fold": 1,
+        "macro_f1": 0.6273931704586584,
+        "top1_accuracy": 0.6685490634610008,
+        "log_loss": 0.20046301760841936,
+        "n_trips_valid": 15
+      },
+      {
+        "fold": 2,
+        "macro_f1": 0.6976654888914348,
+        "top1_accuracy": 0.8171091445427728,
+        "log_loss": 0.12026557220033339,
+        "n_trips_valid": 17
+      },
+      {
+        "fold": 3,
+        "macro_f1": 0.6767394833491718,
+        "top1_accuracy": 0.8384117647058823,
+        "log_loss": null,
+        "n_trips_valid": 16
+      },
+      {
+        "fold": 4,
+        "macro_f1": 0.6622103412100776,
+        "top1_accuracy": 0.7723765432098766,
+        "log_loss": null,
+        "n_trips_valid": 16
+      },
+      {
+        "fold": 5,
+        "macro_f1": 0.6186692002794844,
+        "top1_accuracy": 0.7916366457906113,
+        "log_loss": 0.12731102026491287,
+        "n_trips_valid": 16
+      }
+    ],
+    "cv_macro_f1_mean": 0.6565355368377653,
+    "cv_macro_f1_std": 0.029716031961740927,
+    "cv_top1_mean": 0.7776166323420288,
+    "cv_log_loss_mean": null
+  },
+  "test": {
+    "top1_accuracy": 0.8005189578479136,
+    "macro_f1": 0.6368123063645279,
+    "log_loss": null,
+    "zero_true_probability_fraction": 6.8259851603082615e-06,
+    "n_observations": 18884,
+    "n_candidate_rows": 146499,
+    "inference_seconds": 0.16554389998782426,
+    "inference_ms_per_obs": 0.008766357762541001,
+    "inference_ms_per_row": 0.0011300002046964433,
+    "candidate_miss_rate": 0.01530396102520648
+  },
+  "nearest_candidate_test": {
+    "n_obs": 18884,
+    "n_obs_covered": 18595,
+    "top1_accuracy": 0.5581444609192968,
+    "top1_accuracy_covered": 0.5668190373756387,
+    "macro_f1": 0.41555702192796373,
+    "log_loss": null,
+    "candidate_miss_rate": 0.01530396102520648
+  },
+  "per_trip": [
+    {
+      "trip_id": "00000000",
+      "n_obs": 2489,
+      "top1_accuracy": 0.9273,
+      "candidate_miss_rate": 0.0016
+    },
+    {
+      "trip_id": "00000007",
+      "n_obs": 1273,
+      "top1_accuracy": 0.8704,
+      "candidate_miss_rate": 0.0047
+    },
+    {
+      "trip_id": "00000009",
+      "n_obs": 1029,
+      "top1_accuracy": 0.7988,
+      "candidate_miss_rate": 0.0097
+    },
+    {
+      "trip_id": "00000040",
+      "n_obs": 2936,
+      "top1_accuracy": 0.923,
+      "candidate_miss_rate": 0.0003
+    },
+    {
+      "trip_id": "00000052",
+      "n_obs": 262,
+      "top1_accuracy": 0.9275,
+      "candidate_miss_rate": 0.0038
+    },
+    {
+      "trip_id": "00000056",
+      "n_obs": 3914,
+      "top1_accuracy": 0.803,
+      "candidate_miss_rate": 0.025
+    },
+    {
+      "trip_id": "00000065",
+      "n_obs": 768,
+      "top1_accuracy": 0.7878,
+      "candidate_miss_rate": 0.013
+    },
+    {
+      "trip_id": "00000076",
+      "n_obs": 1475,
+      "top1_accuracy": 0.798,
+      "candidate_miss_rate": 0.0203
+    },
+    {
+      "trip_id": "00000077",
+      "n_obs": 3864,
+      "top1_accuracy": 0.5916,
+      "candidate_miss_rate": 0.0323
+    },
+    {
+      "trip_id": "00000091",
+      "n_obs": 874,
+      "top1_accuracy": 0.8181,
+      "candidate_miss_rate": 0.0046
+    }
+  ]
+}

@@ -97,7 +97,8 @@ leakage rule enforced mechanically.
 | **4. Ship** | prediction maps with P4 | numbers locked, §3.1 written | trials CSV, §4 written | API, UI, two-laptop test, screenshots |
 
 **Hard gate before Block 4:** `comparison.csv` reports five models with real
-numbers. If it does not, the demo has nothing to serve.
+numbers. If it does not, the demo has nothing to serve. *Met: all five records are
+present and `assert_five_models` passes; the API serves the winning forest.*
 
 ---
 
@@ -113,18 +114,15 @@ numbers. If it does not, the demo has nothing to serve.
 - [x] Feature ablation table: geometry block vs geometry+sequential (`experiments/results/model1_ablation.csv`)
 - [x] **Model 1** trained, CV + student-test numbers recorded (`experiments/results/model_logreg.json`), `describe()` filled
 - [ ] Can explain the per-trip projection and why degrees-distance is invalid *(your viva answer, rehearse it)*
-- [ ] Switch `scripts/run_model1.py` from sklearn GroupKFold to P2's `cross_validate_model` once `cv.py` lands
+- [x] Switch `scripts/run_model1.py` from sklearn GroupKFold to P2's `cross_validate_model` once `cv.py` lands
 
 ### P2 — Models 2 & 5, evaluation harness
 - [x] `group_kfold` + `cross_validate_model` implemented; fold std reported
 - [x] KNN and SVM satisfy `check_classifier`; unit tests green
 - [x] SVM subsample size stated and justified; Platt-scaling cost measured
-- [ ] `comparison.csv` + `comparison.md` generated from records, five rows
-      *(4 of 5 rows present: `logreg`, `knn`, `svm_rbf`, `random_forest`;
-      Person 4's HistGradientBoosting is excluded from this build by request, so
-      the five-model guard reports INCOMPLETE rather than inventing a row)*
-- [ ] `assert_five_models` passes *(blocked on the missing fifth record; we do not
-      hand-fill it)*
+- [x] `comparison.csv` + `comparison.md` generated from records, five rows
+      *(`logreg`, `knn`, `random_forest`, `hist_gradient_boosting`, `svm_rbf`)*
+- [x] `assert_five_models` passes
 - [ ] Can explain why KNN probabilities are coarse and what that costs the HMM
 
 ### P3 — Model 3, Bayesian optimisation
@@ -136,9 +134,9 @@ numbers. If it does not, the demo has nothing to serve.
 - [ ] Can explain TPE, the search space, and why the objective is CV macro F1
 
 ### P4 — Model 4, decoder, serving
-- [ ] HistGradientBoosting satisfies `check_classifier`; early-stopping iterations recorded
-      *(outside this build by request; Person 4's `scripts/run_model4.py` and
-      `experiments/results/standin_model4_loto_summary.json` are in the repo)*
+- [x] HistGradientBoosting satisfies `check_classifier`; early-stopping iterations recorded
+      (85 of 300 iterations; official five-fold CV and student-test numbers in
+      `experiments/results/model_hist_gradient_boosting.json`)
 - [x] Viterbi in log space; zero-candidate and disconnected steps handled
 - [x] Classifier-only vs +HMM comparison including a case where it got worse
 - [x] `POST /predict/{trip_id}` works for all ten reserved trips

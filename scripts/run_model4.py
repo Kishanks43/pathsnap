@@ -45,20 +45,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-import joblib  # noqa: E402
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-from sklearn.model_selection import GroupKFold  # noqa: E402
-
-from pathsnap.config import ARTIFACTS_DIR, LOGS_DIR, RESULTS_DIR, ensure_dirs  # noqa: E402
-from pathsnap.features.build import FEATURE_COLUMNS  # noqa: E402
-from pathsnap.features.dataset import StackedFeatures, load_partition  # noqa: E402
-from pathsnap.models.base import ModelRecord, check_classifier  # noqa: E402
-from pathsnap.models.boosting import HistGradientBoostingModel  # noqa: E402
+import joblib
+import numpy as np
+import pandas as pd
 
 # Same metric definitions as Model 1 (docs/CONTRACTS.md C9). Importing them, not
 # copying them, is what keeps the two models comparable.
-from run_model1 import evaluate, nearest_candidate_baseline, observation_table  # noqa: E402
+from run_model1 import evaluate, nearest_candidate_baseline, observation_table
+from sklearn.model_selection import GroupKFold
+
+from pathsnap.config import ARTIFACTS_DIR, LOGS_DIR, RESULTS_DIR, ensure_dirs
+from pathsnap.evaluation.cv import cross_validate_model, group_kfold
+from pathsnap.evaluation.holdout import evaluate_on_test
+from pathsnap.features.build import FEATURE_COLUMNS
+from pathsnap.features.dataset import StackedFeatures, load_partition
+from pathsnap.models.base import ModelRecord, check_classifier
+from pathsnap.models.boosting import HistGradientBoostingModel
 
 SEED = 42
 N_SPLITS = 5
@@ -162,25 +164,37 @@ def summarise_predictions(pred: pd.DataFrame) -> None:
 
 # ------------------------------------------------------------------------- official
 def grouped_cv(d: StackedFeatures, mask: np.ndarray) -> dict:
+    """Score with the shared harness so Model 4 is comparable with the other four."""
     X, y, groups = d.X[mask], d.y[mask], d.group_index[mask]
     obs, arc = d.obs_idx[mask], d.arc_id[mask]
+
+    cv = cross_validate_model(
+        HistGradientBoostingModel(random_state=SEED),
+        X, y, groups, n_splits=N_SPLITS, seed=SEED,
+        obs_idx=obs, arc_id=arc,
+    )
+    valid_trips = [len(np.unique(groups[va])) for _, va in
+                   group_kfold(X, y, groups, n_splits=N_SPLITS, seed=SEED)]
     folds = []
-    for k, (tr, va) in enumerate(GroupKFold(n_splits=N_SPLITS).split(X, y, groups), 1):
-        model, t_fit = fit_model(X[tr], y[tr])
-        s = score_rows(model, X[va])
-        m = evaluate(observation_table(groups[va], obs[va], arc[va], y[va], s))
-        m.update({"fold": k, "fit_seconds": t_fit, "n_iter_used": n_iter_used(model),
-                  "n_trips_valid": int(len(np.unique(groups[va])))})
+    for k, (f, n_trips) in enumerate(zip(cv.folds, valid_trips), 1):
+        m = {
+            "fold": k,
+            "macro_f1": f.macro_f1,
+            "top1_accuracy": f.top1_accuracy,
+            "log_loss": f.log_loss,
+            "n_trips_valid": n_trips,
+        }
         folds.append(m)
+        ll = "N/A" if f.log_loss is None else f"{f.log_loss:.4f}"
         say(f"    fold {k}: macro_f1={m['macro_f1']:.4f} top1={m['top1_accuracy']:.4f} "
-            f"log_loss={m['log_loss']:.4f} iters={m['n_iter_used']} trips_valid={m['n_trips_valid']} fit={t_fit:.1f}s")
-    f1s = np.array([f["macro_f1"] for f in folds])
+            f"log_loss={ll} trips_valid={n_trips}")
+
     return {
         "folds": folds,
-        "cv_macro_f1_mean": float(f1s.mean()),
-        "cv_macro_f1_std": float(f1s.std(ddof=1)),
-        "cv_top1_mean": float(np.mean([f["top1_accuracy"] for f in folds])),
-        "cv_log_loss_mean": float(np.mean([f["log_loss"] for f in folds])),
+        "cv_macro_f1_mean": cv.mean_macro_f1,
+        "cv_macro_f1_std": cv.std_macro_f1,
+        "cv_top1_mean": cv.mean_top1_accuracy,
+        "cv_log_loss_mean": cv.mean_log_loss,
     }
 
 
@@ -205,12 +219,15 @@ def run_official(started: datetime) -> int:
     say("\n[final] refit on all trusted training rows, score student_test")
     model, t_fit = fit_model(train.X[tr_mask], train.y[tr_mask])
     check_classifier(model, test.X[te_mask][:5000])
-    t0 = time.perf_counter()
-    score = score_rows(model, test.X)
-    t_inf = time.perf_counter() - t0
-    inf_ms = 1000.0 * t_inf / max(int(test.n_obs_per_trip.sum()), 1)
 
-    test_m = obs_metrics(test, score, te_mask)
+    test_m, _ = evaluate_on_test(model, test, te_mask)
+    obs_key = test.group_index[te_mask].astype(np.int64) * 10_000_000 + test.obs_idx[te_mask]
+    covered = pd.DataFrame({"obs": obs_key, "y": test.y[te_mask]}).groupby("obs")["y"].max()
+    test_m["candidate_miss_rate"] = float(1.0 - covered.mean())
+    inf_ms = test_m["inference_ms_per_obs"]
+
+    # One extra inference pass for the per-trip table and the predictions CSV.
+    score = score_rows(model, test.X)
     base_m = nearest_candidate_baseline(test, te_mask)
     say(f"  test (HistGB)          : {test_m}")
     say(f"  test (nearest, no ML)  : {base_m}")
@@ -232,7 +249,7 @@ def run_official(started: datetime) -> int:
         name="hist_gradient_boosting",
         family="boosting",
         config={**model.describe(), "n_iter_used": n_iter_used(model), "features": "all_19",
-                "label_trust_m": 25.0, "cv": f"GroupKFold({N_SPLITS}) by trip"},
+                "label_trust_m": 25.0, "cv": f"GroupKFold({N_SPLITS}) by trip, shared evaluation/cv.py"},
         seed=SEED,
         cv_macro_f1=cv["cv_macro_f1_mean"],
         test_top1_accuracy=test_m["top1_accuracy"],

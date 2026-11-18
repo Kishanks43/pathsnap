@@ -10,17 +10,17 @@
     "scaling": "StandardScaler fitted on training folds only",
     "features": "all_19",
     "label_trust_m": 25.0,
-    "cv": "GroupKFold(5) by trip, sklearn (temporary until P2 cv.py lands)"
+    "cv": "GroupKFold(5) by trip, shared evaluation/cv.py"
   },
   "seed": 42,
-  "cv_macro_f1": 0.6443530101932982,
+  "cv_macro_f1": 0.6268633518075973,
   "test_top1_accuracy": 0.7938466426604532,
-  "test_macro_f1": 0.6316352735431844,
-  "test_log_loss": 0.635128405529876,
+  "test_macro_f1": 0.6105030505559061,
+  "test_log_loss": 0.1487822453918601,
   "candidate_miss_rate": 0.01530396102520648,
   "route_continuity": null,
-  "train_seconds": 3.1529898999724537,
-  "inference_ms_per_obs": 0.003053728022842059,
+  "train_seconds": 3.6512285000062548,
+  "inference_ms_per_obs": 0.0016093465386493556,
   "artifact_path": null,
-  "notes": "route_continuity N/A: requires the HMM-decoded route (P4). Metrics are observation-level on trusted labels. CV std macro F1 = 0.0290 over 5 folds. convergence_warnings (final fit) = 0."
+  "notes": "route_continuity N/A: requires the HMM-decoded route (P4). Metrics are observation-level on trusted labels. CV std macro F1 = 0.0252 over 5 folds. convergence_warnings (final fit) = 0."
 }
