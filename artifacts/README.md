@@ -13,6 +13,9 @@ configuration live here at runtime. The folder is gitignored by default.
 | `decoder_config.json` | Person 4 | `api/inference.py` |
 | `eval_trips.txt` | Person 4 | `api/main.py` (`/trips`) |
 
+Person 2's `p2_knn.joblib` and `p2_svm_rbf.joblib` are experiment artifacts kept
+for reproducibility of the comparison table; the API does not load them.
+
 ## Submission note
 
 Deliverables asks for "the saved model weights and required configuration files,

@@ -1,0 +1,31 @@
+{
+  "name": "svm_rbf",
+  "family": "kernel-based",
+  "config": {
+    "name": "svm_rbf",
+    "family": "kernel-based",
+    "kernel": "rbf",
+    "C": 1.0,
+    "gamma": "scale",
+    "probability": true,
+    "scaling": "StandardScaler fitted on training folds only",
+    "max_train_samples": 30000,
+    "n_train_total": 1352108,
+    "n_train_used": 30000,
+    "subsample_strategy": "stratified_by_label",
+    "n_support_vectors": 4533,
+    "fit_seconds": 23.4616,
+    "note": "probability=True triggers internal 5-fold Platt scaling"
+  },
+  "seed": 42,
+  "cv_macro_f1": 0.6430715383160899,
+  "test_top1_accuracy": 0.8061851302690108,
+  "test_macro_f1": 0.6296843679299478,
+  "test_log_loss": 0.13571729954533582,
+  "candidate_miss_rate": 0.0117,
+  "route_continuity": 0.8996917910743966,
+  "train_seconds": 23.461609599995427,
+  "inference_ms_per_obs": 1.7300378097865794,
+  "artifact_path": "artifacts/p2_svm_rbf.joblib",
+  "notes": "CV macro F1 std=0.0271; stratified row subsample 30,000/1,352,108 (cap=30,000); validation folds scored in full; zero-probability true labels on 0.0000% of test candidate rows; Platt overhead=6.69x (4.0s -> 26.7s)"
+}

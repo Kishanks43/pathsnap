@@ -1,0 +1,30 @@
+{
+  "name": "knn",
+  "family": "instance-based",
+  "config": {
+    "name": "knn",
+    "family": "instance-based",
+    "n_neighbors": 11,
+    "weights": "distance",
+    "metric": "euclidean",
+    "algorithm": "brute",
+    "scaling": "StandardScaler fitted on training folds only",
+    "max_train_samples": 100000,
+    "n_train_total": 1352108,
+    "n_train_samples": 100000,
+    "subsample_strategy": "stratified_by_label",
+    "fit_seconds": 0.026,
+    "note": "predict_proba is a k-neighbour vote -> coarse probability estimates"
+  },
+  "seed": 42,
+  "cv_macro_f1": 0.606391171759832,
+  "test_top1_accuracy": 0.7750476593941962,
+  "test_macro_f1": 0.5817726055732465,
+  "test_log_loss": null,
+  "candidate_miss_rate": 0.0117,
+  "route_continuity": 0.9003998081426834,
+  "train_seconds": 0.025984899955801666,
+  "inference_ms_per_obs": 0.5318817729299302,
+  "artifact_path": "artifacts/p2_knn.joblib",
+  "notes": "CV macro F1 std=0.0260; k selected from {3,5,7,11} by the same 5-fold group-aware CV, so the recorded CV score is optimistically biased by model selection; trained on 100,000/1,352,108 rows (label-stratified subsample, cap=100,000); zero-probability true labels on 0.5898% of test candidate rows (log loss is infinite when >0); probabilities are k-neighbour votes, not calibrated"
+}

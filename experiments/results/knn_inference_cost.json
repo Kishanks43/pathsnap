@@ -1,0 +1,29 @@
+{
+  "n_neighbors": 11,
+  "weights": "distance",
+  "query_rows_shared_across_sizes": 10000,
+  "random_state": 42,
+  "sizes": [
+    {
+      "n_train": 25000,
+      "n_query": 10000,
+      "fit_seconds": 0.007868200016673654,
+      "predict_seconds": 0.20128390000900254,
+      "ms_per_row": 0.020128390000900255
+    },
+    {
+      "n_train": 50000,
+      "n_query": 10000,
+      "fit_seconds": 0.020800600002985448,
+      "predict_seconds": 0.42116700002225116,
+      "ms_per_row": 0.042116700002225116
+    },
+    {
+      "n_train": 100000,
+      "n_query": 10000,
+      "fit_seconds": 0.05411959998309612,
+      "predict_seconds": 0.8403242999920622,
+      "ms_per_row": 0.08403242999920621
+    }
+  ]
+}

@@ -116,11 +116,13 @@ numbers. If it does not, the demo has nothing to serve.
 - [ ] Switch `scripts/run_model1.py` from sklearn GroupKFold to P2's `cross_validate_model` once `cv.py` lands
 
 ### P2 — Models 2 & 5, evaluation harness
-- [ ] `group_kfold` + `cross_validate_model` implemented; fold std reported
-- [ ] KNN and SVM satisfy `check_classifier`; unit tests green
-- [ ] SVM subsample size stated and justified; Platt-scaling cost measured
+- [x] `group_kfold` + `cross_validate_model` implemented; fold std reported
+- [x] KNN and SVM satisfy `check_classifier`; unit tests green
+- [x] SVM subsample size stated and justified; Platt-scaling cost measured
 - [ ] `comparison.csv` + `comparison.md` generated from records, five rows
-- [ ] `assert_five_models` passes
+      *(3 of 5 rows present: `logreg`, `knn`, `svm_rbf`; waiting on P3/P4 —
+      never hand-fill these)*
+- [ ] `assert_five_models` passes *(blocked on the same missing records)*
 - [ ] Can explain why KNN probabilities are coarse and what that costs the HMM
 
 ### P3 — Model 3, Bayesian optimisation

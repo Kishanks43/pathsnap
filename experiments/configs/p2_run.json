@@ -1,0 +1,18 @@
+{
+  "run": "p2_knn_svm",
+  "argv": [
+    "--skip-knn"
+  ],
+  "utc_started": "2026-11-18T09:41:33+00:00",
+  "seed": 42,
+  "n_splits": 5,
+  "knn_subsample": 100000,
+  "svm_subsample": 30000,
+  "n_train_trusted_rows": 1352108,
+  "n_test_trusted_rows": 146499,
+  "n_features": 19,
+  "student_test_candidate_miss_rate": 0.0117,
+  "python": "3.13.7",
+  "scikit_learn": "1.8.0",
+  "wall_clock_seconds_last_invocation": 537.0
+}

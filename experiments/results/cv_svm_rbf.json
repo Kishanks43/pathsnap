@@ -1,0 +1,65 @@
+{
+  "platt_cost": {
+    "n_train_used": 30000,
+    "n_support_vectors": 4533,
+    "fit_no_platt_s": 3.989539100031834,
+    "fit_with_platt_s": 26.691255400015507,
+    "extra_seconds": 22.701716299983673,
+    "overhead_ratio": 6.690310517273168
+  },
+  "cv": {
+    "model_name": "svm_rbf",
+    "n_folds": 5,
+    "mean_macro_f1": 0.6430715383160899,
+    "std_macro_f1": 0.027141119717391332,
+    "mean_top1_accuracy": 0.7772771440143108,
+    "mean_log_loss": 0.16438032493195093,
+    "folds": [
+      {
+        "fold": 0,
+        "n_train": 1082074,
+        "n_valid": 270034,
+        "macro_f1": 0.6287975803750826,
+        "top1_accuracy": 0.7055074084428292,
+        "log_loss": 0.20219314626651408,
+        "zero_prob_fraction": 0.0
+      },
+      {
+        "fold": 1,
+        "n_train": 1079696,
+        "n_valid": 272412,
+        "macro_f1": 0.6821851678800833,
+        "top1_accuracy": 0.8074125996670464,
+        "log_loss": 0.14847168277336578,
+        "zero_prob_fraction": 0.0
+      },
+      {
+        "fold": 2,
+        "n_train": 1082307,
+        "n_valid": 269801,
+        "macro_f1": 0.6578205019570935,
+        "top1_accuracy": 0.8359411764705882,
+        "log_loss": 0.12426136927789112,
+        "zero_prob_fraction": 0.0
+      },
+      {
+        "fold": 3,
+        "n_train": 1082029,
+        "n_valid": 270079,
+        "macro_f1": 0.6450535616885157,
+        "top1_accuracy": 0.7500723379629629,
+        "log_loss": 0.19755526253742664,
+        "zero_prob_fraction": 0.0
+      },
+      {
+        "fold": 4,
+        "n_train": 1082326,
+        "n_valid": 269782,
+        "macro_f1": 0.6015008796796741,
+        "top1_accuracy": 0.7874521975281272,
+        "log_loss": 0.14942016380455705,
+        "zero_prob_fraction": 0.0
+      }
+    ]
+  }
+}

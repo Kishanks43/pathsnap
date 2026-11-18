@@ -70,7 +70,18 @@ pytest -q
 
 # 4. run the API (once P4 has implemented it)
 uvicorn pathsnap.api.main:app --host 0.0.0.0 --port 8000
+
+# 5. reproduce P2's models and the comparison table
+python scripts/run_p2.py                 # KNN + RBF SVM (~20 min on a 16-core laptop)
+python scripts/run_p2.py --skip-svm      # KNN only
+python scripts/run_p2.py --skip-knn      # SVM only
+python scripts/run_p2.py --table-only    # rebuild comparison.csv/.md from records
 ```
+
+The two slow models are deliberately subsampled (KNN 100k, SVM 30k training
+rows per fold; validation folds are always scored in full). The caps are printed,
+written into `experiments/results/model_*.json` and explained in the module
+docstring and `docs/EXPERIMENT_LOG.md`; nothing is silently truncated.
 
 Detailed per-person setup, git identity and branch commands:
 [`docs/SETUP.md`](docs/SETUP.md).
