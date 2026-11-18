@@ -1,0 +1,22 @@
+# Keep the build context small: the API image needs src/, requirements and the
+# artifacts listed in pathsnap.api.inference.REQUIRED_ARTIFACTS.
+.git
+.github
+.gitignore
+.venv
+data
+docs
+experiments
+notebooks
+reports
+scripts
+tests
+ui
+ci
+*.md
+*.log
+
+# Experiment models are not loaded by the API.
+artifacts/p2_knn.joblib
+artifacts/p2_svm_rbf.joblib
+artifacts/hist_gradient_boosting.joblib

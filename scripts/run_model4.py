@@ -56,7 +56,7 @@ from sklearn.model_selection import GroupKFold
 
 from pathsnap.config import ARTIFACTS_DIR, LOGS_DIR, RESULTS_DIR, ensure_dirs
 from pathsnap.evaluation.cv import cross_validate_model, group_kfold
-from pathsnap.evaluation.holdout import evaluate_on_test
+from pathsnap.evaluation.holdout import evaluate_on_test, mean_route_continuity
 from pathsnap.features.build import FEATURE_COLUMNS
 from pathsnap.features.dataset import StackedFeatures, load_partition
 from pathsnap.models.base import ModelRecord, check_classifier
@@ -220,7 +220,9 @@ def run_official(started: datetime) -> int:
     model, t_fit = fit_model(train.X[tr_mask], train.y[tr_mask])
     check_classifier(model, test.X[te_mask][:5000])
 
-    test_m, _ = evaluate_on_test(model, test, te_mask)
+    test_m, pred_obs = evaluate_on_test(model, test, te_mask)
+    continuity = mean_route_continuity(test, te_mask, pred_obs)
+    test_m["route_continuity"] = continuity["mean_route_continuity"]
     obs_key = test.group_index[te_mask].astype(np.int64) * 10_000_000 + test.obs_idx[te_mask]
     covered = pd.DataFrame({"obs": obs_key, "y": test.y[te_mask]}).groupby("obs")["y"].max()
     test_m["candidate_miss_rate"] = float(1.0 - covered.mean())
@@ -256,13 +258,14 @@ def run_official(started: datetime) -> int:
         test_macro_f1=test_m["macro_f1"],
         test_log_loss=test_m["log_loss"],
         candidate_miss_rate=test_m["candidate_miss_rate"],
-        route_continuity=None,
+        route_continuity=test_m.get("route_continuity"),
         train_seconds=t_fit,
         inference_ms_per_obs=inf_ms,
         artifact_path=str(artifact_path.relative_to(ARTIFACTS_DIR.parent)),
         notes=(
-            "route_continuity N/A: requires the HMM-decoded route. Metrics are observation-level on "
-            f"trusted labels. CV std macro F1 = {cv['cv_macro_f1_std']:.4f} over {N_SPLITS} folds. "
+            "route_continuity is the classifier-only argmax continuity (not the HMM-decoded route). "
+            "Metrics are observation-level on trusted labels. "
+            f"CV std macro F1 = {cv['cv_macro_f1_std']:.4f} over {N_SPLITS} folds. "
             "sklearn's early stopping holds out a random 10% of ROWS (not whole trips) as its internal "
             "validation set, so the stopping point can be later than a trip-aware split would choose."
         ),
@@ -272,7 +275,8 @@ def run_official(started: datetime) -> int:
     detail_path = RESULTS_DIR / "model4_detail.json"
     detail_path.write_text(
         json.dumps({"cv": cv, "test": test_m, "nearest_candidate_test": base_m,
-                    "per_trip": per_trip.to_dict("records")}, indent=2, default=float),
+                    "per_trip": per_trip.to_dict("records"),
+                    "route_continuity_per_trip": continuity["per_trip"]}, indent=2, default=float),
         encoding="utf-8",
     )
     say(f"\nwrote {record_path}\nwrote {pred_path}\nwrote {detail_path}\nwrote {artifact_path}")

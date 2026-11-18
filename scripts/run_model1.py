@@ -52,7 +52,7 @@ from sklearn.exceptions import ConvergenceWarning
 
 from pathsnap.config import LOGS_DIR, RESULTS_DIR, ensure_dirs
 from pathsnap.evaluation.cv import cross_validate_model, group_kfold
-from pathsnap.evaluation.holdout import evaluate_on_test
+from pathsnap.evaluation.holdout import evaluate_on_test, mean_route_continuity
 from pathsnap.evaluation.metrics import macro_f1
 from pathsnap.features.build import FEATURE_COLUMNS
 from pathsnap.features.dataset import StackedFeatures, load_partition
@@ -183,7 +183,8 @@ def student_test(model, d: StackedFeatures, mask: np.ndarray, cols: list[int]) -
         X=d.X[:, cols], y=d.y, groups=d.group_index,
         obs_idx=d.obs_idx, arc_id=d.arc_id,
     )
-    shared, _ = evaluate_on_test(model, view, mask)
+    shared, pred_obs = evaluate_on_test(model, view, mask)
+    continuity = mean_route_continuity(d, mask, pred_obs)
 
     obs_key = d.group_index[mask].astype(np.int64) * OBS_KEY_STRIDE + d.obs_idx[mask]
     covered = pd.DataFrame({"obs": obs_key, "y": d.y[mask]}).groupby("obs")["y"].max()
@@ -193,6 +194,8 @@ def student_test(model, d: StackedFeatures, mask: np.ndarray, cols: list[int]) -
         "log_loss": shared["log_loss"],
         "candidate_miss_rate": float(1.0 - covered.mean()),
         "n_obs": shared["n_observations"],
+        "route_continuity": continuity["mean_route_continuity"],
+        "route_continuity_per_trip": continuity["per_trip"],
     }
     return m, shared["inference_ms_per_obs"]
 
@@ -283,12 +286,12 @@ def main() -> int:
         test_macro_f1=final["test"]["macro_f1"],
         test_log_loss=final["test"]["log_loss"],
         candidate_miss_rate=final["test"]["candidate_miss_rate"],
-        route_continuity=None,
+        route_continuity=final["test"].get("route_continuity"),
         train_seconds=final["train_seconds"],
         inference_ms_per_obs=final["inference_ms_per_obs"],
         artifact_path=None,
         notes=(
-            "route_continuity N/A: requires the HMM-decoded route (P4). "
+            "route_continuity is the classifier-only argmax continuity (not the HMM-decoded route). "
             "Metrics are observation-level on trusted labels. "
             f"CV std macro F1 = {final['cv']['cv_macro_f1_std']:.4f} over {N_SPLITS} folds. "
             f"convergence_warnings (final fit) = {final['convergence_warnings']}."

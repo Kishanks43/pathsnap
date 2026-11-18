@@ -2,7 +2,7 @@
 numpy>=1.26
 pandas>=2.1
 scipy>=1.11
-scikit-learn>=1.4
+scikit-learn==1.8.0  # pinned to match artifacts/manifest.json; container must not silently change versions
 joblib>=1.3
 
 # Bayesian hyperparameter optimisation (required by the brief)
@@ -21,7 +21,7 @@ streamlit>=1.32
 
 # Visualisation
 matplotlib>=3.8
-seaborn>=3.13
+seaborn>=0.13,<0.14
 folium>=0.15
 
 # Dev

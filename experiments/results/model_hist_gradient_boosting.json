@@ -22,9 +22,9 @@
   "test_macro_f1": 0.6368123063645279,
   "test_log_loss": null,
   "candidate_miss_rate": 0.01530396102520648,
-  "route_continuity": null,
-  "train_seconds": 5.547018799989019,
-  "inference_ms_per_obs": 0.008766357762541001,
+  "route_continuity": 0.9021278920038165,
+  "train_seconds": 8.0372583999997,
+  "inference_ms_per_obs": 0.013647685872496998,
   "artifact_path": "artifacts\\hist_gradient_boosting.joblib",
-  "notes": "route_continuity N/A: requires the HMM-decoded route. Metrics are observation-level on trusted labels. CV std macro F1 = 0.0297 over 5 folds. sklearn's early stopping holds out a random 10% of ROWS (not whole trips) as its internal validation set, so the stopping point can be later than a trip-aware split would choose."
+  "notes": "route_continuity is the classifier-only argmax continuity (not the HMM-decoded route). Metrics are observation-level on trusted labels. CV std macro F1 = 0.0297 over 5 folds. sklearn's early stopping holds out a random 10% of ROWS (not whole trips) as its internal validation set, so the stopping point can be later than a trip-aware split would choose."
 }

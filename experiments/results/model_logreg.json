@@ -18,9 +18,9 @@
   "test_macro_f1": 0.6105030505559061,
   "test_log_loss": 0.1487822453918601,
   "candidate_miss_rate": 0.01530396102520648,
-  "route_continuity": null,
-  "train_seconds": 3.6512285000062548,
-  "inference_ms_per_obs": 0.0016093465386493556,
+  "route_continuity": 0.8915433865495738,
+  "train_seconds": 5.42087570001604,
+  "inference_ms_per_obs": 0.0022587110774224244,
   "artifact_path": null,
-  "notes": "route_continuity N/A: requires the HMM-decoded route (P4). Metrics are observation-level on trusted labels. CV std macro F1 = 0.0252 over 5 folds. convergence_warnings (final fit) = 0."
+  "notes": "route_continuity is the classifier-only argmax continuity (not the HMM-decoded route). Metrics are observation-level on trusted labels. CV std macro F1 = 0.0252 over 5 folds. convergence_warnings (final fit) = 0."
 }
