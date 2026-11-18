@@ -34,8 +34,6 @@ ACCEPTANCE CRITERIA
 
 from __future__ import annotations
 
-import numpy as np
-
 from pathsnap.io.schema import CandidateSet, Trip
 
 

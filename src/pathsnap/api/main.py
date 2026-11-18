@@ -36,8 +36,6 @@ HARD RULES FROM THE BRIEF
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
