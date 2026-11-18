@@ -143,6 +143,46 @@ route-truncated trips. On trusted labels it is 1.22%. Both must be quoted.
 
 ---
 
+### [P1] Model 1 — Logistic Regression, feature ablation
+
+**Question:** how much of the candidate-scoring signal is geometry alone, and what
+does a fitted linear model add over the nearest-candidate rule?
+
+**Setup**
+- Partitions: train (80 trips, 1,352,108 trusted rows), student_test (10 trips, 146,499 trusted rows)
+- CV: 5-fold GroupKFold by trip, seed 42. Temporary splitter until P2's `cv.py` lands.
+- Model: StandardScaler + LogisticRegression(C=1.0, max_iter=2000), fitted per fold
+- Command: `python scripts/run_model1.py`
+- Full log: `experiments/logs/model1_20261118_122042.log`
+
+**Expected:** the sequential block (previous observation, connectivity, speed) should
+add signal beyond geometry. A geometry-only linear model cannot do better than the
+nearest-candidate rule on its own, since its score is monotone in distance.
+
+**Result** (observation level, trusted labels)
+
+| config | CV macro F1 (mean ± std) | CV top-1 | student-test top-1 | student-test macro F1 | student-test log loss |
+|---|---|---|---|---|---|
+| nearest candidate (no model) | — | — | 0.5581 | 0.4156 | N/A (raw distances, not probabilities) |
+| Logistic, geometry only (10 cols) | 0.3863 ± 0.0420 | 0.5756 | 0.5581 | 0.4156 | 0.8721 |
+| **Logistic, all 19 cols** | **0.6444 ± 0.0290** | **0.7855** | **0.7938** | **0.6316** | **0.6351** |
+
+Train time 3.2 s, inference 0.003 ms/obs, 0 convergence warnings.
+
+**What this changes:** the sequential block is worth ~26 points of CV macro F1. Geometry
+alone reproduces nearest-candidate exactly on student_test, which confirms the linear
+model is not learning anything beyond distance from those columns. Model 1 is the
+baseline every other model must beat.
+
+**Failure mode / caveat:**
+- Route continuity is N/A here; it needs the HMM-decoded route (P4).
+- Miss rate on the student-test trusted rows is 1.53%. The full, unfiltered student-test
+  figure in `candidate_quality.json` is 1.17%. They use different denominators; quote both
+  with their definitions.
+- Metrics are on trusted labels only. Untrusted observations (residual > 25 m) are not scored.
+
+---
+
 ## Decisions log
 
 Short, dated entries for choices that are hard to reverse. This is the section the

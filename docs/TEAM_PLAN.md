@@ -108,11 +108,12 @@ numbers. If it does not, the demo has nothing to serve.
 - [x] Feature schema v1 frozen; `artifacts/feature_schema.json` committed
 - [x] Cached matrices for both partitions (`scripts/prepare_dataset.py`)
 - [x] `experiments/results/candidate_quality.json` — miss rate 3.4% overall, 1.2% on trusted labels
-- [ ] EDA notebook executed end-to-end, committed with real outputs
-- [ ] One Folium map (network + GPS + legend) committed as HTML
-- [ ] Feature ablation table: geometry block vs geometry+sequential
-- [ ] **Model 1** trained, CV + student-test numbers recorded, `describe()` filled
-- [ ] Can explain the per-trip projection and why degrees-distance is invalid
+- [x] EDA notebook executed end-to-end, committed with real outputs
+- [x] One Folium map (network + GPS + legend) committed as HTML
+- [x] Feature ablation table: geometry block vs geometry+sequential (`experiments/results/model1_ablation.csv`)
+- [x] **Model 1** trained, CV + student-test numbers recorded (`experiments/results/model_logreg.json`), `describe()` filled
+- [ ] Can explain the per-trip projection and why degrees-distance is invalid *(your viva answer, rehearse it)*
+- [ ] Switch `scripts/run_model1.py` from sklearn GroupKFold to P2's `cross_validate_model` once `cv.py` lands
 
 ### P2 — Models 2 & 5, evaluation harness
 - [ ] `group_kfold` + `cross_validate_model` implemented; fold std reported

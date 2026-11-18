@@ -1,0 +1,26 @@
+{
+  "name": "logreg",
+  "family": "linear/probabilistic",
+  "config": {
+    "name": "logreg",
+    "family": "linear/probabilistic",
+    "C": 1.0,
+    "max_iter": 2000,
+    "class_weight": null,
+    "scaling": "StandardScaler fitted on training folds only",
+    "features": "all_19",
+    "label_trust_m": 25.0,
+    "cv": "GroupKFold(5) by trip, sklearn (temporary until P2 cv.py lands)"
+  },
+  "seed": 42,
+  "cv_macro_f1": 0.6443530101932982,
+  "test_top1_accuracy": 0.7938466426604532,
+  "test_macro_f1": 0.6316352735431844,
+  "test_log_loss": 0.635128405529876,
+  "candidate_miss_rate": 0.01530396102520648,
+  "route_continuity": null,
+  "train_seconds": 3.1529898999724537,
+  "inference_ms_per_obs": 0.003053728022842059,
+  "artifact_path": null,
+  "notes": "route_continuity N/A: requires the HMM-decoded route (P4). Metrics are observation-level on trusted labels. CV std macro F1 = 0.0290 over 5 folds. convergence_warnings (final fit) = 0."
+}

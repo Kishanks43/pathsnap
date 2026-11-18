@@ -1,0 +1,4 @@
+config,n_features,cv_macro_f1_mean,cv_macro_f1_std,cv_top1_mean,test_top1_accuracy,test_macro_f1,test_log_loss,test_candidate_miss_rate
+nearest_candidate,1,,,,0.5581,0.4156,,0.0153
+geometry_only,10,0.3863,0.042,0.5756,0.5581,0.4156,0.8721,0.0153
+all_19,19,0.6444,0.029,0.7855,0.7938,0.6316,0.6351,0.0153
