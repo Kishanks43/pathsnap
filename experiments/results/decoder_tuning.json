@@ -1,0 +1,42 @@
+{
+  "held_out_train_trips": [
+    "00000001",
+    "00000005",
+    "00000013",
+    "00000016",
+    "00000024",
+    "00000028",
+    "00000035",
+    "00000037",
+    "00000038",
+    "00000088"
+  ],
+  "scorer": "random_forest",
+  "scorer_params": {},
+  "grid": {
+    "beta_m": [
+      10.0,
+      25.0,
+      50.0,
+      100.0,
+      200.0
+    ],
+    "max_hops": [
+      1,
+      2
+    ]
+  },
+  "chosen": {
+    "emission_weight": 1.0,
+    "prob_floor": 1e-06,
+    "beta_m": 10.0,
+    "connectivity_bonus": 5.0,
+    "same_arc_bonus": 1.0,
+    "max_hops": 2,
+    "max_gap_s": 30.0,
+    "reset_on_gap": true
+  },
+  "chosen_hmm_top1": 0.8796346050510478,
+  "chosen_classifier_top1": 0.8743283181085438,
+  "note": "student_test not used; decoder settings chosen on training trips only"
+}

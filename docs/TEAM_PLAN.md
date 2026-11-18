@@ -120,26 +120,32 @@ numbers. If it does not, the demo has nothing to serve.
 - [x] KNN and SVM satisfy `check_classifier`; unit tests green
 - [x] SVM subsample size stated and justified; Platt-scaling cost measured
 - [ ] `comparison.csv` + `comparison.md` generated from records, five rows
-      *(3 of 5 rows present: `logreg`, `knn`, `svm_rbf`; waiting on P3/P4 —
-      never hand-fill these)*
-- [ ] `assert_five_models` passes *(blocked on the same missing records)*
+      *(4 of 5 rows present: `logreg`, `knn`, `svm_rbf`, `random_forest`;
+      Person 4's HistGradientBoosting is excluded from this build by request, so
+      the five-model guard reports INCOMPLETE rather than inventing a row)*
+- [ ] `assert_five_models` passes *(blocked on the missing fifth record; we do not
+      hand-fill it)*
 - [ ] Can explain why KNN probabilities are coarse and what that costs the HMM
 
 ### P3 — Model 3, Bayesian optimisation
-- [ ] Random Forest satisfies `check_classifier`; importances exported
-- [ ] Feature importances read and interpreted (not just exported)
-- [ ] Optuna study with TPE sampler; objective = group-aware CV macro F1
-- [ ] `trials.csv` exported and committed (the required search record)
-- [ ] Tuned vs untuned comparison on identical partitions and metrics
+- [x] Random Forest satisfies `check_classifier`; importances exported
+- [x] Feature importances read and interpreted (not just exported)
+- [x] Optuna study with TPE sampler; objective = group-aware CV macro F1
+- [x] `trials.csv` exported and committed (the required search record)
+- [x] Tuned vs untuned comparison on identical partitions and metrics
 - [ ] Can explain TPE, the search space, and why the objective is CV macro F1
 
 ### P4 — Model 4, decoder, serving
 - [ ] HistGradientBoosting satisfies `check_classifier`; early-stopping iterations recorded
-- [ ] Viterbi in log space; zero-candidate and disconnected steps handled
-- [ ] Classifier-only vs +HMM comparison including a case where it got worse
-- [ ] `POST /predict/{trip_id}` works for all ten reserved trips
-- [ ] UI on a second laptop draws the returned route *(later stage — "see how it goes")*
-- [ ] API request logs screenshot-ready on the receiving laptop
+      *(outside this build by request; Person 4's `scripts/run_model4.py` and
+      `experiments/results/standin_model4_loto_summary.json` are in the repo)*
+- [x] Viterbi in log space; zero-candidate and disconnected steps handled
+- [x] Classifier-only vs +HMM comparison including a case where it got worse
+- [x] `POST /predict/{trip_id}` works for all ten reserved trips
+- [ ] UI on a second laptop draws the returned route *(ran headless and against the
+      live API on one laptop; the two-laptop run is the remaining manual step)*
+- [x] API request logs screenshot-ready on the receiving laptop
+      (`experiments/logs/api_requests.jsonl`, gitignored runtime log)
 
 **Note on the UI:** the decoder and API are on the critical path for evaluation;
 the UI is the last thing to build. Do not start it before the five models report

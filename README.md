@@ -68,7 +68,7 @@ python scripts/check_data.py
 # 3. verify the scaffold works
 pytest -q
 
-# 4. run the API (once P4 has implemented it)
+# 4. run the API
 uvicorn pathsnap.api.main:app --host 0.0.0.0 --port 8000
 
 # 5. reproduce P2's models and the comparison table
@@ -76,6 +76,23 @@ python scripts/run_p2.py                 # KNN + RBF SVM (~20 min on a 16-core l
 python scripts/run_p2.py --skip-svm      # KNN only
 python scripts/run_p2.py --skip-knn      # SVM only
 python scripts/run_p2.py --table-only    # rebuild comparison.csv/.md from records
+
+# 6. reproduce P3 (random forest + Bayesian tuning) - about 1.5 h on a 16-core laptop
+python scripts/run_p3.py untuned         # default forest: group CV, student test, importances
+python scripts/run_p3.py tune --model random_forest --n-trials 25
+python scripts/run_p3.py final --model random_forest   # full-data tuned vs untuned, writes model.joblib
+
+# 7. reproduce P4 (decoder, student-test HMM vs classifier, manifest)
+python scripts/run_p4.py decoder-tune    # decoder settings chosen on 10 held-out TRAIN trips
+python scripts/run_p4.py student-test    # 10 student trips, HMM vs classifier-only, maps
+python scripts/run_p4.py manifest        # artifacts/manifest.json with checksums
+
+# 8. serve it (Laptop 1) and open the UI (Laptop 2)
+.\scripts\run_api.ps1                    # http://<laptop-1>:8000/docs
+.\scripts\run_ui.ps1 -Api http://<laptop-1>:8000
+
+# 9. checks
+python -m pytest -q
 ```
 
 The two slow models are deliberately subsampled (KNN 100k, SVM 30k training
@@ -98,7 +115,10 @@ These come straight from the brief and are the ones teams actually lose marks on
 2. **Splits are by trip.** No observation from one trip may be in two partitions or
    two CV folds. Use `groups=trip_id`.
 3. **Five models, real numbers.** Every number in the report must be reproducible
-   from this repo. No typed-in metrics, no fabricated curves.
+   from this repo. No typed-in metrics, no fabricated curves. This build ships four
+   comparable records (`logreg`, `knn`, `svm_rbf`, `random_forest`); Person 4's
+   HistGradientBoosting is deliberately excluded, so `assert_five_models` reports
+   INCOMPLETE and no stand-in row is inserted into `comparison.csv`.
 4. **Keep the experiment record.** Configs, seeds, Optuna trials and result CSVs are
    committed, not just the final model.
 5. **Everyone can defend their own section** in the viva. That is how individual
@@ -106,6 +126,15 @@ These come straight from the brief and are the ones teams actually lose marks on
 
 ## Status
 
-`pytest` passes on the scaffold. Implementation is split across the four
-workstreams; each stub raises `NotImplementedError` with a docstring explaining
-exactly what is expected and how it will be judged.
+All four workstreams are implemented for this build: the P1 feature pipeline and
+logistic regression, the P2 group-aware CV harness with KNN and RBF SVM, the P3
+random forest plus the Optuna search, and P4's Viterbi decoder, FastAPI service,
+Streamlit UI, prediction maps and artifact manifest. Person 4's
+HistGradientBoosting model is excluded by request; its runner and stand-in summary
+remain in the repository for the owner to finish.
+
+`pytest -q` passes. The long-running stages write their records to
+`experiments/results/`; the API and UI run from `artifacts/`, which is gitignored
+because the forest is 665 MB (see `artifacts/README.md`). The CI definition lives in
+`ci/github-actions.yml`: copy it to `.github/workflows/ci.yml` with a token that has
+the `workflow` scope to enable Actions.

@@ -200,3 +200,20 @@ The API must use exactly that order.
 
 The report cites this file. Do not recompute miss rate by hand in a notebook and
 quote a different number.
+
+---
+
+## Amendments (Person 4, announced in the repository)
+
+**A1 - decoder input (extends C6).** `viterbi_decode` takes the trip's GPS track as a
+keyword argument, `track=`. It is needed for the observed distance between fixes and
+for gap detection. The reference route is never used. Everything else in C6 is as
+written.
+
+**A2 - artifacts (amends C8).** `preprocessor.joblib` is not required. Every model
+that can be the final model is self-contained: the logistic regression, KNN and SVM
+keep their scaler inside a Pipeline, and the random forest needs no scaling. The
+API therefore requires `model.joblib`, `feature_schema.json`,
+`decoder_config.json` and `eval_trips.txt`, and reports the SHA-256 of each one in
+`GET /health`. A `manifest.json` written by `scripts/run_p4.py manifest` records the
+git commit, library versions and checksums.

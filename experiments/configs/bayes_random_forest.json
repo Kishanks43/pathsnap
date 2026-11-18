@@ -1,0 +1,18 @@
+{
+  "model_name": "random_forest",
+  "study_name": "pathsnap-random_forest-seed-42-folds-5",
+  "objective": "mean group-aware cross-validation macro F1",
+  "cv": {
+    "implementation": "pathsnap.evaluation.cv.cross_validate_model",
+    "n_splits": 5,
+    "groups": "trip_id",
+    "metrics": "observation-level macro F1 using obs_idx and arc_id"
+  },
+  "sampler": "TPESampler",
+  "seed": 42,
+  "requested_trials_this_run": 25,
+  "training_rows": 150201,
+  "training_groups": 80,
+  "label_filter": "caller must apply StackedFeatures.trusted() before tuning",
+  "database": "C:\\Users\\admin\\Downloads\\pathsnap\\experiments\\results\\trials.db"
+}

@@ -1,0 +1,23 @@
+{
+  "model_name": "random_forest",
+  "best_params": {
+    "n_estimators": 200,
+    "max_depth": 10,
+    "min_samples_split": 5,
+    "min_samples_leaf": 16,
+    "max_features": 0.5,
+    "class_weight": "balanced_subsample"
+  },
+  "best_objective_value": 0.6927348160239725,
+  "n_trials": 25,
+  "objective_rows": 150201,
+  "search_seconds": 2618.4919609999633,
+  "trials_csv": "C:\\Users\\admin\\Downloads\\pathsnap\\experiments\\results\\trials.csv",
+  "study": {
+    "study_name": "pathsnap-random_forest-seed-42-folds-5",
+    "database": "C:\\Users\\admin\\Downloads\\pathsnap\\experiments\\results\\trials.db",
+    "complete_trials": 25,
+    "failed_trials": 0,
+    "best_trial_number": 17
+  }
+}

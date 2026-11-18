@@ -344,6 +344,153 @@ model that wins the five-way comparison.
 
 ---
 
+### [P3] Random Forest (Model 4 candidate) - untuned baseline, 25-trial Bayesian search, full-data decision
+
+**Question:** does a depth-limited random forest beat the linear and kernel models on
+the same folds, and does 25 trials of Bayesian tuning improve it once the chosen
+configuration is re-scored on all 1.35M training rows?
+
+**Setup**
+- Data partitions: train (80 trips, 1,352,108 trusted candidate rows, 3,650 after
+  candidate filtering per trip on average) / student_test (10 trips, 146,499 trusted
+  rows) - evaluator-test never read
+- CV: 5 folds, `GroupKFold` on trip index, seed 42
+- Model: `RandomForestModel`, n_estimators=300, max_depth=20, max_features=sqrt,
+  class_weight=balanced_subsample, gini impurity, n_jobs=-1
+- Search: Optuna TPE, 25 trials, objective = 5-fold group CV macro F1 on a
+  150,201-row observation subsample (whole observations, seed 42); the search space
+  is n_estimators {100..400}, max_depth {5, 10, 15, 20, 25, None}, min_samples_split
+  and min_samples_leaf {2..20}, max_features {sqrt, log2, 0.5}, class_weight
+  {None, balanced, balanced_subsample}
+- Decision rule, fixed before looking: re-fit the best configuration on the full
+  training rows, compare its full-data CV macro F1 with the untuned forest, keep the
+  higher one, then score that one on student_test exactly once
+- Features: schema v1, 19 columns
+- Commands: `python scripts/run_p3.py untuned` then
+  `python scripts/run_p3.py tune --model random_forest --n-trials 25` then
+  `python scripts/run_p3.py final --model random_forest`
+
+**Expected:** the forest should beat logistic regression (0.6444) because candidate
+geometry is non-linear, and tuning should add a small amount, mostly through deeper
+trees and a lower learning bias. The subsample objective was expected to overstate
+the full-data score.
+
+**Result**
+
+| metric | untuned (kept) | tuned |
+|---|---|---|
+| CV macro F1 (mean +- std), full data | **0.6627 +- 0.0260** | 0.6596 +- 0.0285 |
+| CV macro F1, tuning subsample | not run | 0.6927 (best trial 17) |
+| student-test top-1 accuracy | **0.8148** | 0.8058 |
+| student-test macro F1 | **0.6443** | 0.6344 |
+| student-test log loss | **0.1307** | 0.1775 |
+| route continuity | 0.9031 | - |
+| train time (full 1.35M rows) | 234.8 s | 224.4 s |
+| inference ms/obs | 0.0342 | - |
+
+Best searched configuration: n_estimators=200, max_depth=10, min_samples_split=5,
+min_samples_leaf=16, max_features=0.5, class_weight=balanced_subsample. The search
+took 43.6 min (2,618 s) and all 25 trials completed; trials.csv records every trial.
+
+Top feature importances (mean decrease in impurity, untuned model):
+dist_rank 0.239, dist_ratio 0.210, dist_m 0.096, heading_change_deg 0.091,
+log1p_dist 0.085, t_along 0.076, prev_dist_m 0.064. Rank and ratio features carry
+more signal than the raw distance, which is the expected signature of per-candidate
+normalisation working.
+
+**Artifacts:** `experiments/results/rf_untuned.json`,
+`experiments/results/model_random_forest.json`,
+`experiments/results/tuned_vs_untuned_random_forest.json`,
+`experiments/results/trials.csv`, `experiments/results/importances_rf.csv`,
+`artifacts/model.joblib` (the kept untuned forest)
+
+**What this changes:** the random forest is the strongest single model
+(CV 0.6627, student-test top-1 0.8148, macro F1 0.6443) and becomes the API's
+`model.joblib`. Tuning is rejected: the best subsample configuration is more
+regularised (depth 10, leaf 16), scores 0.0031 lower on full-data CV and 0.009 lower
+top-1 on student_test. The 0.6927 subsample score was optimistic by about 0.03,
+which is the expected selection effect of choosing the best of 25 trials on 150k
+rows.
+
+**Failure mode / caveat:** the kept model is chosen by comparing two configurations
+on the same five folds, so its CV score is a selection-biased estimate; the fold
+spread is large (0.629-0.699) because whole trips differ in difficulty. The search
+only saw 11% of the training rows, so a configuration that needs more data to pay
+off (for example deeper trees) could have been missed. Log loss is reported on
+student_test only: the full-data CV helper did not record it for these folds
+(`null` in the comparison file). The forest is 665 MB on disk, which is why
+`artifacts/` stays out of git and the manifest carries its checksum instead.
+
+---
+
+### [P4] Viterbi decoder - settings chosen on held-out TRAIN trips, then student_test HMM vs classifier-only
+
+**Question:** does the HMM improve on the per-observation classifier, which settings
+should it use, and where does it make the route worse?
+
+**Setup**
+- Decoder tuning: 10 training trips drawn by `RandomState(42).permutation(80)[:10]`
+  (`00000001, 00000005, 00000013, 00000016, 00000024, 00000028, 00000035,
+  00000037, 00000038, 00000088`). The scorer is a random forest trained on the
+  other 70 trips only (1,231,364 trusted rows). student_test is not read in this stage.
+- Sweep: beta_m in {10, 25, 50, 100, 200} x max_hops in {1, 2}; emission weight 1.0,
+  probability floor 1e-6, connectivity bonus 5.0, same-arc bonus 1.0, gap reset at
+  30 s. Selection: pooled observation-level top-1 on the held-out trips, ties broken
+  by fewer forced emission-only steps.
+- Final comparison: the exact API pipeline (`Predictor`), once on each of the 10
+  student_test trips, against `classifier_only` on the same probabilities.
+- Commands: `python scripts/run_p4.py decoder-tune`,
+  `python scripts/run_p4.py student-test`
+
+**Expected:** decoding should smooth isolated classifier errors and improve top-1
+on trips with long, coherent routes, while a too-large beta_m should over-smooth
+and lose accuracy. max_hops=2 should reduce forced steps at lane changes.
+
+**Result**
+
+| metric | value |
+|---|---|
+| chosen settings | beta_m=10.0, max_hops=2 |
+| held-out train top-1, HMM | 0.8796 |
+| held-out train top-1, classifier-only | 0.8743 |
+| held-out train forced steps | 3,693 (hops=2) vs 4,196 (hops=1) |
+| student-test pooled top-1, HMM | **0.8249** |
+| student-test pooled top-1, classifier-only | 0.8148 |
+| student-test mean route continuity | 0.9638 |
+| student-test mean road-set Jaccard | 0.7398 |
+| trips HMM better / worse / equal | 5 / 5 / 0 |
+
+Per-trip deltas ranged from -7.09 pp (`00000009`, 0.7541 vs 0.8251) to +7.25 pp
+(`00000077`, 0.7145 vs 0.6421). The worst trip has the lowest Jaccard (0.612) and
+the second-highest forced-step count (157): the decoder locks onto a nearby parallel
+road and stays there. The best trip is long (3,911 observations) and the classifier
+is locally noisy, which is exactly the case the transition term is meant to fix.
+Prediction maps were written for both cases:
+`reports/maps/pred_00000009.html` and `reports/maps/pred_00000077.html`.
+
+**Artifacts:** `experiments/results/decoder_sweep.csv`,
+`experiments/results/decoder_tuning.json`,
+`experiments/results/hmm_vs_classifier.csv`,
+`experiments/results/hmm_vs_classifier.json`,
+`artifacts/decoder_config.json`, `reports/maps/pred_*.html`
+
+**What this changes:** Viterbi is the API's default decode mode. It gains 1.01 pp
+pooled top-1 on student_test and improves continuity, but it is not uniformly
+better: 5 of 10 trips get worse. The report must show the worst case, not only the
+pooled average. `decoder_config.json` is now written by the tuning stage rather than
+by hand.
+
+**Failure mode / caveat:** beta_m=10 is the smallest value in the pre-registered
+grid, so the choice sits on the boundary; smaller values (2.5, 5) were not tested
+and could be better or could collapse towards classifier-only. The setting was
+selected on 10 training trips, so its held-out score is still a selection estimate.
+The student-test comparison uses one model and one seed; the 5/10 split of wins and
+losses is the honest summary of a small effect. Forced emission-only steps remain
+in the thousands on the held-out trips; no trip in student_test lost all candidate
+coverage (0 observations without candidates), but that path is handled and tested.
+
+---
+
 ## Decisions log
 
 Short, dated entries for choices that are hard to reverse. This is the section the
@@ -361,6 +508,12 @@ report's methodology quietly draws from.
 | | Primary selection metric: CV macro F1 | Top-1 accuracy | Accuracy hides rare-arc performance; brief asks for macro F1 |
 | 2026-11-18 | KNN/SVM training capped with label-stratified subsampling (100k / 30k), validation folds scored in full | Train on all 1.35M rows; reduce folds; reduce candidate count | Full-data KNN is a ~270k x 1.16M distance matrix per fold and full-data Platt SVM is O(n^3); the cap is the largest size whose 5-fold run fits the budget, and it is disclosed in every record |
 | 2026-11-18 | Candidate-miss observations keep true label `-1` in observation-level metrics | Drop them; treat them as wrong only for accuracy | A miss is a real failure of the pipeline; dropping it would inflate every model's score. Macro F1 includes `-1` as a class that can never be predicted, which is deliberately conservative |
+| 2026-11-18 | Bayesian tuning runs on a 150,201-row observation subsample, but the tuned-vs-untuned decision is made on full-data CV | Tune on all 1.35M rows; tune on a fixed trip subset | 25 trials on the full data would cost roughly 10x the 44 min spent. The decision rule was pre-registered: the subsample only proposes configurations, the full data decides |
+| 2026-11-18 | Keep the untuned forest as `model.joblib` | Ship the tuned configuration because it won the search | The tuned configuration scores 0.6596 vs 0.6627 on full-data CV and 0.8058 vs 0.8148 top-1 on student_test. Shipping the search winner would contradict the pre-registered decision rule and the held-out evidence |
+| 2026-11-18 | The comparison table in this build has four models, not five | Add Person 4's HistGradientBoosting record from a non-comparable stand-in run | The build scope excludes Person 4's model by request. `standin_model4_loto_summary.json` uses a different protocol, so adding it to `comparison.csv` would compare unlike numbers. `assert_five_models` therefore reports INCOMPLETE and the report must say why |
+| 2026-11-18 | Viterbi settings chosen on 10 held-out training trips, not on student_test | Tune on student_test for the best demo numbers | Student_test is the only held-out data this build has; tuning on it would leak the evaluation. The tuning stage fits a separate forest on the other 70 training trips |
+| 2026-11-18 | max_hops=2 wins the tie-break at beta_m=10 by needing 503 fewer forced steps | Keep the simpler hops=1 | Top-1 was identical to four decimal places; fewer forced emission-only steps means more of the route is explained by the model, which is the safer failure mode |
+| 2026-11-18 | Report the 5/10 trips where the HMM makes top-1 worse, with the worst map | Report only the pooled gain | The pooled +1.01 pp hides a -7.09 pp trip. The brief asks for a case where the decoder got worse, and the parallel-road failure is the honest limitation |
 | | | | |
 
 ---

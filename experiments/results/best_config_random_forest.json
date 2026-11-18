@@ -1,0 +1,23 @@
+{
+  "model_name": "random_forest",
+  "study_name": "pathsnap-random_forest-seed-42-folds-5",
+  "seed": 42,
+  "objective": "mean group-aware cross-validation macro F1",
+  "cv": {
+    "implementation": "pathsnap.evaluation.cv.cross_validate_model",
+    "n_splits": 5,
+    "groups": "trip_id",
+    "metrics": "observation-level macro F1 using obs_idx and arc_id"
+  },
+  "best_params": {
+    "n_estimators": 200,
+    "max_depth": 10,
+    "min_samples_split": 5,
+    "min_samples_leaf": 16,
+    "max_features": 0.5,
+    "class_weight": "balanced_subsample"
+  },
+  "best_value": 0.6927348160239725,
+  "n_trials_total": 25,
+  "n_trials_this_run": 25
+}

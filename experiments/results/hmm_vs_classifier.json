@@ -1,0 +1,46 @@
+{
+  "trips": 10,
+  "pooled_top1_hmm": 0.8248782037703877,
+  "pooled_top1_classifier": 0.8147638212243169,
+  "trips_hmm_better": 5,
+  "trips_hmm_worse": 5,
+  "trips_equal": 0,
+  "worst_case": {
+    "trip_id": "00000009",
+    "n_obs": 1049,
+    "trusted_obs_scored": 1029,
+    "top1_hmm": 0.7541302235179786,
+    "top1_classifier": 0.8250728862973761,
+    "delta_hmm_minus_clf": -0.07094266277939743,
+    "route_continuity_hmm": 0.8959923664122137,
+    "road_set_overlap": 0.6119402985074627,
+    "gap_resets": 0,
+    "forced_steps": 157,
+    "obs_without_candidates": 0,
+    "seconds": 0.59
+  },
+  "best_case": {
+    "trip_id": "00000077",
+    "n_obs": 3911,
+    "trusted_obs_scored": 3864,
+    "top1_hmm": 0.714544513457557,
+    "top1_classifier": 0.6420807453416149,
+    "delta_hmm_minus_clf": 0.07246376811594213,
+    "route_continuity_hmm": 0.9557544757033248,
+    "road_set_overlap": 0.5821917808219178,
+    "gap_resets": 0,
+    "forced_steps": 176,
+    "obs_without_candidates": 0,
+    "seconds": 1.38
+  },
+  "decoder_config": {
+    "emission_weight": 1.0,
+    "prob_floor": 1e-06,
+    "beta_m": 10.0,
+    "connectivity_bonus": 5.0,
+    "same_arc_bonus": 1.0,
+    "max_hops": 2,
+    "max_gap_s": 30.0,
+    "reset_on_gap": true
+  }
+}

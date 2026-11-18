@@ -1,0 +1,95 @@
+{
+  "stage": "untuned",
+  "config": {
+    "name": "random_forest",
+    "family": "tree/ensemble",
+    "n_estimators": 300,
+    "max_depth": 20,
+    "min_samples_split": 2,
+    "min_samples_leaf": 2,
+    "max_features": "sqrt",
+    "class_weight": "balanced_subsample",
+    "random_state": 42,
+    "n_jobs": -1,
+    "objective": "gini impurity",
+    "depth_limited": true
+  },
+  "cv": {
+    "mean_macro_f1": 0.6626936290671005,
+    "std_macro_f1": 0.02595905484809537,
+    "mean_top1_accuracy": 0.7823287282141702,
+    "mean_log_loss": null,
+    "folds": [
+      {
+        "fold": 0,
+        "n_train": 1082074,
+        "n_valid": 270034,
+        "macro_f1": 0.6394233579443,
+        "top1_accuracy": 0.6885099245177523,
+        "log_loss": null,
+        "zero_prob_fraction": 3.7032373701089494e-06
+      },
+      {
+        "fold": 1,
+        "n_train": 1079696,
+        "n_valid": 272412,
+        "macro_f1": 0.6992084522690867,
+        "top1_accuracy": 0.8149186600075937,
+        "log_loss": null,
+        "zero_prob_fraction": 1.1012730716708515e-05
+      },
+      {
+        "fold": 2,
+        "n_train": 1082307,
+        "n_valid": 269801,
+        "macro_f1": 0.681848517321323,
+        "top1_accuracy": 0.8458235294117648,
+        "log_loss": null,
+        "zero_prob_fraction": 1.8532177419653745e-05
+      },
+      {
+        "fold": 3,
+        "n_train": 1082029,
+        "n_valid": 270079,
+        "macro_f1": 0.6638541105184709,
+        "top1_accuracy": 0.7650462962962963,
+        "log_loss": null,
+        "zero_prob_fraction": 3.7026203444177444e-06
+      },
+      {
+        "fold": 4,
+        "n_train": 1082326,
+        "n_valid": 269782,
+        "macro_f1": 0.6291337072823221,
+        "top1_accuracy": 0.7973452308374439,
+        "log_loss": null,
+        "zero_prob_fraction": 2.2240179107575746e-05
+      }
+    ]
+  },
+  "student_test": {
+    "top1_accuracy": 0.8147638212243169,
+    "macro_f1": 0.644302102654783,
+    "log_loss": 0.13067573653859416,
+    "zero_true_probability_fraction": 0.0,
+    "n_observations": 18884,
+    "n_candidate_rows": 146499,
+    "inference_seconds": 0.5666611999622546,
+    "inference_ms_per_obs": 0.030007477227401748,
+    "inference_ms_per_row": 0.0038680209418648225,
+    "route_continuity": 0.9031173155152056
+  },
+  "train_seconds": 201.80802620004397,
+  "route_continuity_per_trip": {
+    "00000000": 0.9630225080385852,
+    "00000007": 0.9897798742138365,
+    "00000009": 0.830739299610895,
+    "00000040": 0.9512776831345826,
+    "00000052": 0.9348659003831418,
+    "00000056": 0.8573984155379504,
+    "00000065": 0.9087353324641461,
+    "00000076": 0.8521031207598372,
+    "00000077": 0.8910173440331348,
+    "00000091": 0.852233676975945
+  }
+}

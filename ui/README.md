@@ -1,28 +1,31 @@
-# UI (Laptop 2)
+# Evaluator UI
 
-OWNER: Person 4
+A Streamlit page that calls the FastAPI service and draws the predicted route.
+It never receives ground truth: it shows the predicted route, the predicted road
+per observation and the aggregate metrics the API returns.
 
-The evaluator-facing interface. It runs on a **different laptop** from the API,
-talks to it over HTTP, and must:
+## Run it
 
-1. List the ten evaluator trips (fetched from `GET /trips`).
-2. Send the selected trip to `POST /predict/{trip_id}`.
-3. Draw the returned `route_geometry` on a map, with the raw GPS observations.
-4. Show the server-returned metrics.
-
-Suggested implementation: Streamlit + `streamlit-folium`. It is the fastest way
-to a working UI and it is easy to screenshot for the report.
+Laptop 1 (API, holds the models and the trip data):
 
 ```powershell
-# API base URL is the other laptop's LAN address, not localhost
-$env:PATHSNAP_API="http://192.168.1.42:8000"
-streamlit run ui/app.py
+.\scripts\run_api.ps1
 ```
 
-Rubric reminders for this component:
+Laptop 2 (UI), replacing the address with Laptop 1's LAN address:
 
-- Screenshots of the working UI go in the report (Deliverables section 7).
-- Screenshots of the API responses **on the receiving laptop's terminal** also
-  go in the report. Set the API logging up so those lines are readable.
-- The submitted code must match what is demonstrated. Do not demo a notebook
-  while the repo contains something else.
+```powershell
+.\scripts\run_ui.ps1 -Api http://192.168.1.20:8000
+```
+
+Then open <http://localhost:8501>, pick a trip and press **Predict route**.
+
+## What the page shows
+
+- Model name and API address (top of the left column).
+- Four numbers: observations, route continuity, top-1 accuracy of the decoded route
+  and top-1 of the classifier alone. Accuracy is only shown when a reference route
+  exists for the trip; otherwise N/A.
+- The predicted route on an interactive map (start and end markers).
+- Decoder diagnostics (gap resets, forced steps, observations without candidates).
+- The first 50 predicted road ids.
