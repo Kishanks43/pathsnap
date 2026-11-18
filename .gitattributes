@@ -1,0 +1,12 @@
+# Normalise line endings so Windows and macOS/Linux teammates see the same files.
+* text=auto
+
+*.py    text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+*.txt   text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.joblib binary
+*.png   binary
+*.html  text
